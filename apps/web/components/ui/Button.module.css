@@ -1,0 +1,136 @@
+.button {
+  --btn-bg: transparent;
+  --btn-fg: var(--text);
+  --btn-border: transparent;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--btn-border);
+  background: var(--btn-bg);
+  color: var(--btn-fg);
+  border-radius: var(--r-md);
+  font-size: 13px;
+  font-weight: 550;
+  line-height: 1;
+  padding: 0 14px;
+  height: 36px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.button:disabled,
+.button[aria-disabled='true'] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Primary — the single brand action per view. Carries the Inovasix blue→violet
+   →magenta gradient with a soft blue glow that shifts to magenta on hover. */
+.primary {
+  --btn-fg: #ffffff;
+  --btn-border: transparent;
+  background: var(--brand-gradient);
+  box-shadow: 0 8px 26px -10px rgba(0, 135, 255, 0.55);
+  transition:
+    box-shadow 0.28s ease,
+    transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 0.28s ease;
+}
+
+.primary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+  box-shadow: 0 14px 38px -10px rgba(176, 38, 255, 0.55);
+}
+
+.primary:active:not(:disabled) {
+  transform: translateY(0);
+  filter: brightness(0.98);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primary:hover:not(:disabled),
+  .primary:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* Secondary — bordered surface. */
+.secondary {
+  --btn-bg: var(--surface-2);
+  --btn-border: var(--border-strong);
+}
+
+.secondary:hover:not(:disabled) {
+  --btn-bg: var(--surface-hover);
+}
+
+/* Ghost — toolbar / low-emphasis. */
+.ghost {
+  --btn-fg: var(--text-muted);
+}
+
+.ghost:hover:not(:disabled) {
+  --btn-bg: var(--surface-hover);
+  --btn-fg: var(--text);
+}
+
+/* Danger — destructive, still restrained. */
+.danger {
+  --btn-bg: var(--danger-soft);
+  --btn-fg: var(--danger);
+  --btn-border: rgba(244, 114, 107, 0.32);
+}
+
+.danger:hover:not(:disabled) {
+  --btn-bg: rgba(244, 114, 107, 0.2);
+}
+
+.sm {
+  height: 30px;
+  padding: 0 10px;
+  font-size: 12.5px;
+  border-radius: var(--r-sm);
+}
+
+.lg {
+  height: 44px;
+  padding: 0 20px;
+  font-size: 14px;
+}
+
+.block {
+  width: 100%;
+}
+
+/* Square icon-only control. */
+.iconOnly {
+  padding: 0;
+  width: 36px;
+}
+
+.iconOnly.sm {
+  width: 30px;
+}
+
+.spinner {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  animation: buttonSpin 0.65s linear infinite;
+}
+
+@keyframes buttonSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}

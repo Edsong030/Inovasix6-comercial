@@ -1,0 +1,397 @@
+.sidebar {
+  grid-area: sidebar;
+  display: flex;
+  flex-direction: column;
+  width: var(--sidebar-w);
+  background: var(--bg-subtle);
+  border-right: 1px solid var(--border);
+  height: 100dvh;
+  position: sticky;
+  top: 0;
+  overflow: hidden;
+}
+
+/* Brand ------------------------------------------------------------------- */
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: var(--topbar-h);
+  padding: 0 16px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  position: relative;
+}
+
+/* The one deliberate glow in the product — very low opacity. */
+.brand::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  width: 140px;
+  height: 64px;
+  transform: translateY(-50%);
+  background: radial-gradient(circle, rgba(120, 44, 255, 0.26) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.mark {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: var(--brand-gradient);
+  color: #fff;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
+  box-shadow: 0 6px 18px -6px rgba(0, 135, 255, 0.75);
+}
+
+.brandText {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  min-width: 0;
+}
+
+.brandName {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+/* The "6" carries the brand gradient — the signature detail of the wordmark. */
+.brandSix {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 800;
+}
+
+.brandSuffix {
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+
+/* Navigation -------------------------------------------------------------- */
+
+.nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 10px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.sectionLabel {
+  display: block;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  padding: 0 10px;
+  margin-bottom: 6px;
+}
+
+.items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 34px;
+  padding: 0 10px;
+  border-radius: var(--r-md);
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  position: relative;
+  transition:
+    background-color 0.16s ease,
+    color 0.16s ease,
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.item:hover {
+  background: var(--surface-hover);
+  color: var(--text);
+}
+
+/* Active item — brand-tinted fill, gradient rail and a discreet glow so the
+   current section reads clearly without shouting. */
+.itemActive,
+.itemActive:hover {
+  color: var(--text);
+  font-weight: 600;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 135, 255, 0.16) 0%,
+    rgba(120, 44, 255, 0.12) 55%,
+    rgba(176, 38, 255, 0.06) 100%
+  );
+  border: 1px solid rgba(120, 44, 255, 0.28);
+  box-shadow: 0 8px 24px -14px rgba(0, 135, 255, 0.65);
+}
+
+/* Active rail — a gradient bar in the brand colours. */
+.itemActive::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 7px;
+  bottom: 7px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--brand-gradient);
+}
+
+.itemIcon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--text-faint);
+  transition:
+    color 0.16s ease,
+    filter 0.16s ease;
+}
+
+.item:hover .itemIcon {
+  color: var(--accent-hover);
+}
+
+.itemActive .itemIcon {
+  color: #8fb6ff;
+  filter: drop-shadow(0 0 6px rgba(0, 135, 255, 0.55));
+}
+
+.itemLabel {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Footer ------------------------------------------------------------------ */
+
+.footer {
+  border-top: 1px solid var(--border);
+  padding: 12px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* Current-plan chip. */
+.planCard {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.planLabel {
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.planRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.planName {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.planStatus {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--success);
+}
+
+.planDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success);
+}
+
+/* Promo card echoing the institutional banner, in miniature. */
+.promoCard {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-md);
+  padding: 14px 13px 13px;
+  border: 1px solid rgba(120, 44, 255, 0.28);
+  background:
+    radial-gradient(150px 90px at 85% 120%, rgba(176, 38, 255, 0.35), transparent 70%),
+    radial-gradient(160px 100px at 0% -10%, rgba(0, 135, 255, 0.3), transparent 70%),
+    linear-gradient(150deg, #0a1230 0%, #0b0f2a 100%);
+}
+
+.promoText {
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--text);
+  margin-bottom: 10px;
+}
+
+.promoBrand {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.tenantCard {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: var(--r-md);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  min-width: 0;
+}
+
+.tenantText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.tenantCompany {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tenantUser {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tenantRole {
+  font-size: 10.5px;
+  color: var(--text-faint);
+  letter-spacing: 0.03em;
+}
+
+/* Tablet: icon rail ------------------------------------------------------- */
+
+@media (min-width: 768px) and (max-width: 1119px) {
+  .sidebar {
+    width: var(--sidebar-w-compact);
+  }
+
+  .brand {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .brandText,
+  .itemLabel,
+  .sectionLabel,
+  .tenantText,
+  .planCard,
+  .promoCard {
+    display: none;
+  }
+
+  .item {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .items {
+    gap: 4px;
+  }
+
+  .nav {
+    padding: 14px 8px;
+    gap: 14px;
+  }
+
+  /* Keep the section grouping legible with a rule instead of a heading. */
+  .section + .section {
+    border-top: 1px solid var(--border);
+    padding-top: 14px;
+  }
+
+  .tenantCard {
+    justify-content: center;
+    padding: 6px;
+  }
+}
+
+/* Mobile: off-canvas drawer ---------------------------------------------- */
+
+@media (max-width: 767px) {
+  .sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 60;
+    width: min(280px, 84vw);
+    transform: translateX(-100%);
+    transition: transform 0.22s ease;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .sidebarOpen {
+    transform: translateX(0);
+  }
+}
+
+.closeButton {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .closeButton {
+    display: inline-flex;
+    margin-left: auto;
+    position: relative;
+    z-index: 1;
+  }
+}

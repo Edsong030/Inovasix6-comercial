@@ -1,0 +1,321 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums (one value per line — Prisma requires this)
+// ---------------------------------------------------------------------------
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+}
+
+enum RoleCode {
+  ADMIN
+  GESTOR
+  COMERCIAL
+  ATENDENTE
+}
+
+enum LeadStatus {
+  OPEN
+  WON
+  LOST
+}
+
+enum ConversationState {
+  AI_ATENDENDO
+  AGUARDANDO_HUMANO
+  HUMANO_ATENDENDO
+  ENCERRADA
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+// ---------------------------------------------------------------------------
+// Multi-tenant FK integrity strategy
+// ---------------------------------------------------------------------------
+// Every tenant-owned parent exposes @@unique([tenantId, id]). Children that
+// reference a parent do so with a COMPOSITE foreign key [tenantId, <parentId>]
+// -> [tenantId, id], reusing the SAME tenantId column that also anchors the
+// child's own relation to Tenant. This makes it physically impossible at the
+// database level for a child row to reference a parent belonging to a
+// different tenant: the shared tenantId must match on both sides.
+//
+// Prisma supports sharing a scalar field between multiple relations, so
+// tenantId participates in both (a) the relation to Tenant and (b) each
+// composite FK. RLS + application predicates remain in place as further layers.
+// ---------------------------------------------------------------------------
+
+model Tenant {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String   @unique
+  timezone  String   @default("America/Sao_Paulo")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  users          User[]
+  roles          Role[]
+  userRoles      UserRole[]
+  authSessions   AuthSession[]
+  contacts       Contact[]
+  pipelines      Pipeline[]
+  pipelineStages PipelineStage[]
+  leads          Lead[]
+  conversations  Conversation[]
+  messages       Message[]
+  auditLogs      AuditLog[]
+
+  @@map("tenants")
+}
+
+model User {
+  id           String     @id @default(uuid()) @db.Uuid
+  tenantId     String     @map("tenant_id") @db.Uuid
+  email        String
+  name         String
+  passwordHash String     @map("password_hash")
+  status       UserStatus @default(INVITED)
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  userRoles    UserRole[]
+  authSessions AuthSession[]
+  ownedLeads   Lead[]        @relation("LeadOwner")
+
+  // Enables composite FKs [tenantId, id] from children (AuthSession, UserRole, Lead.owner).
+  @@unique([tenantId, id])
+  @@unique([tenantId, email])
+  @@index([tenantId, status])
+  @@map("users")
+}
+
+model Role {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  code      RoleCode
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  users  UserRole[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, code])
+  @@map("roles")
+}
+
+model UserRole {
+  tenantId String @map("tenant_id") @db.Uuid
+  userId   String @map("user_id") @db.Uuid
+  roleId   String @map("role_id") @db.Uuid
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  // Both FKs share tenantId, so user and role are forced into the same tenant.
+  user   User   @relation(fields: [tenantId, userId], references: [tenantId, id], onDelete: Cascade)
+  role   Role   @relation(fields: [tenantId, roleId], references: [tenantId, id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([tenantId, roleId])
+  @@map("user_roles")
+}
+
+model AuthSession {
+  id               String    @id @default(uuid()) @db.Uuid
+  tenantId         String    @map("tenant_id") @db.Uuid
+  userId           String    @map("user_id") @db.Uuid
+  // Only the hash of the refresh token is stored, never the token itself.
+  refreshTokenHash String    @map("refresh_token_hash")
+  ip               String?
+  userAgent        String?   @map("user_agent")
+  expiresAt        DateTime  @map("expires_at")
+  lastUsedAt       DateTime? @map("last_used_at")
+  revokedAt        DateTime? @map("revoked_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  // Composite FK: tenantId is shared, so a session cannot bind a user from another tenant.
+  user   User   @relation(fields: [tenantId, userId], references: [tenantId, id], onDelete: Cascade)
+
+  // Active-session lookups and rotation/revocation checks.
+  @@index([tenantId, userId, revokedAt])
+  @@index([expiresAt])
+  @@map("auth_sessions")
+}
+
+// ---------------------------------------------------------------------------
+// CRM core (Lead represents the Opportunity during the MVP)
+// ---------------------------------------------------------------------------
+
+model Contact {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  name      String?
+  phoneE164 String?  @map("phone_e164")
+  email     String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  leads         Lead[]
+  conversations Conversation[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, phoneE164])
+  @@index([tenantId, email])
+  @@map("contacts")
+}
+
+model Pipeline {
+  id        String  @id @default(uuid()) @db.Uuid
+  tenantId  String  @map("tenant_id") @db.Uuid
+  name      String
+  isDefault Boolean @default(false) @map("is_default")
+
+  tenant Tenant          @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  stages PipelineStage[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, name])
+  @@map("pipelines")
+}
+
+model PipelineStage {
+  id         String @id @default(uuid()) @db.Uuid
+  tenantId   String @map("tenant_id") @db.Uuid
+  pipelineId String @map("pipeline_id") @db.Uuid
+  name       String
+  position   Int
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  // Composite FK keeps a stage's pipeline within the same tenant.
+  pipeline Pipeline @relation(fields: [tenantId, pipelineId], references: [tenantId, id], onDelete: Cascade)
+  leads    Lead[]
+
+  @@unique([tenantId, id])
+  @@unique([tenantId, pipelineId, position])
+  @@map("pipeline_stages")
+}
+
+model Lead {
+  id              String     @id @default(uuid()) @db.Uuid
+  tenantId        String     @map("tenant_id") @db.Uuid
+  contactId       String     @map("contact_id") @db.Uuid
+  pipelineStageId String     @map("pipeline_stage_id") @db.Uuid
+  status          LeadStatus @default(OPEN)
+  source          String?
+  interest        String?
+  ownerUserId     String?    @map("owner_user_id") @db.Uuid
+  nextActionAt    DateTime?  @map("next_action_at")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @updatedAt @map("updated_at")
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  contact       Contact       @relation(fields: [tenantId, contactId], references: [tenantId, id], onDelete: Restrict)
+  pipelineStage PipelineStage @relation(fields: [tenantId, pipelineStageId], references: [tenantId, id], onDelete: Restrict)
+  // Nullable owner preserved. Composite FK keeps the owner in the same tenant.
+  // NoAction (not SetNull) because the composite FK includes the NON-nullable
+  // tenantId, which cannot be nulled. The application reassigns/clears
+  // ownerUserId (within the tenant's RLS scope) before removing a user.
+  owner         User?         @relation("LeadOwner", fields: [tenantId, ownerUserId], references: [tenantId, id], onDelete: NoAction)
+  conversations Conversation[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, pipelineStageId])
+  @@index([tenantId, status])
+  @@index([tenantId, contactId])
+  @@index([tenantId, ownerUserId, nextActionAt])
+  @@map("leads")
+}
+
+// ---------------------------------------------------------------------------
+// Conversations & Messages
+// ---------------------------------------------------------------------------
+
+model Conversation {
+  id        String            @id @default(uuid()) @db.Uuid
+  tenantId  String            @map("tenant_id") @db.Uuid
+  contactId String            @map("contact_id") @db.Uuid
+  leadId    String?           @map("lead_id") @db.Uuid
+  state     ConversationState @default(AI_ATENDENDO)
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  contact  Contact   @relation(fields: [tenantId, contactId], references: [tenantId, id], onDelete: Restrict)
+  // Optional link to a Lead, kept within the same tenant via composite FK.
+  // NoAction (not SetNull) for the same reason as Lead.owner: tenantId in the
+  // composite FK is non-nullable. The application clears leadId within tenant
+  // scope before deleting a Lead.
+  lead     Lead?     @relation(fields: [tenantId, leadId], references: [tenantId, id], onDelete: NoAction)
+  messages Message[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId, state, updatedAt])
+  @@index([tenantId, contactId])
+  @@index([tenantId, leadId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String           @id @default(uuid()) @db.Uuid
+  tenantId       String           @map("tenant_id") @db.Uuid
+  conversationId String           @map("conversation_id") @db.Uuid
+  direction      MessageDirection
+  status         MessageStatus    @default(PENDING)
+  externalId     String?          @map("external_id")
+  body           String?
+  createdAt      DateTime         @default(now()) @map("created_at")
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  // Composite FK: a message cannot attach to a conversation of another tenant.
+  conversation Conversation @relation(fields: [tenantId, conversationId], references: [tenantId, id], onDelete: Restrict)
+
+  // Idempotency for provider-delivered messages (e.g. WhatsApp) per tenant.
+  @@unique([tenantId, externalId])
+  @@index([tenantId, conversationId, createdAt])
+  @@map("messages")
+}
+
+// ---------------------------------------------------------------------------
+// Audit
+// ---------------------------------------------------------------------------
+
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  actorId   String?  @map("actor_id") @db.Uuid
+  action    String
+  entity    String
+  entityId  String?  @map("entity_id")
+  before    Json?
+  after     Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, entity, entityId])
+  @@map("audit_logs")
+}

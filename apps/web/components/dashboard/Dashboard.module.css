@@ -1,0 +1,707 @@
+.grid {
+  display: grid;
+  gap: 16px;
+}
+
+/* Summary line under the greeting — colour-coded figures. */
+.summaryLine {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  margin: -8px 0 18px;
+}
+
+.summaryLine strong {
+  font-weight: 650;
+}
+
+.sumLeads {
+  color: var(--brand-cyan);
+}
+
+.sumFollowups {
+  color: #6ba6ff;
+}
+
+.sumMeetings {
+  color: #d08bff;
+}
+
+/* Two-up grid used inside the left column for follow-ups + agenda. */
+.duo {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 767px) {
+  .duo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Metric row -------------------------------------------------------------- */
+
+.metrics {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 16px;
+}
+
+@media (max-width: 1023px) {
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 519px) {
+  .metrics {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.metricCard {
+  height: 100%;
+}
+
+.metric {
+  padding: 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+}
+
+/* Circular KPI icon with the metric's accent tone. */
+.metricIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--brand-gradient-soft);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #a9c6ff;
+}
+
+.metricIcon[data-accent='blue'] {
+  color: #6ba6ff;
+  box-shadow: 0 0 0 1px rgba(0, 135, 255, 0.28), 0 8px 20px -12px rgba(0, 135, 255, 0.8);
+}
+.metricIcon[data-accent='cyan'] {
+  color: #4fd6ea;
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.28), 0 8px 20px -12px rgba(34, 211, 238, 0.7);
+}
+.metricIcon[data-accent='violet'] {
+  color: #b6a2ff;
+  box-shadow: 0 0 0 1px rgba(120, 44, 255, 0.3), 0 8px 20px -12px rgba(120, 44, 255, 0.8);
+}
+.metricIcon[data-accent='magenta'] {
+  color: #e29bff;
+  box-shadow: 0 0 0 1px rgba(176, 38, 255, 0.3), 0 8px 20px -12px rgba(176, 38, 255, 0.8);
+}
+
+.metricInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.metricValue {
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.metricLabel {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.metricDelta {
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.up {
+  color: var(--success);
+}
+
+.down {
+  color: var(--danger);
+}
+
+.flat {
+  color: var(--text-muted);
+}
+
+/* Two/three column layout ------------------------------------------------- */
+
+.columns {
+  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+  align-items: start;
+}
+
+@media (max-width: 1023px) {
+  .columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.stack {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+/* Funnel ------------------------------------------------------------------ */
+
+.funnel {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+/* Funnel + conversion gauge side by side. */
+.funnelLayout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  gap: 22px;
+  align-items: center;
+}
+
+@media (max-width: 767px) {
+  .funnelLayout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+}
+
+.stage {
+  display: grid;
+  grid-template-columns: 118px 1fr 42px 42px;
+  align-items: center;
+  gap: 10px;
+  padding: 3px 6px;
+  margin: 0 -6px;
+  border-radius: var(--r-sm);
+  transition: background-color 0.16s ease;
+}
+
+.stage:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+@media (max-width: 560px) {
+  .stage {
+    grid-template-columns: 96px 1fr 36px 38px;
+    gap: 7px;
+  }
+}
+
+.stageLabel {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.stagePercent {
+  font-size: 12px;
+  color: var(--text-faint);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Conversion gauge -------------------------------------------------------- */
+
+.gauge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding-left: 6px;
+  border-left: 1px solid var(--border);
+}
+
+@media (max-width: 767px) {
+  .gauge {
+    border-left: none;
+    border-top: 1px solid var(--border);
+    padding-top: 16px;
+  }
+}
+
+.gaugeSvg {
+  width: 116px;
+  height: 116px;
+}
+
+.gaugeTrack {
+  fill: none;
+  stroke: var(--surface-2);
+  stroke-width: 9;
+}
+
+.gaugeFill {
+  fill: none;
+  stroke-width: 9;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.gaugeValue {
+  fill: var(--text);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.gaugeCaption {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 8px;
+}
+
+.gaugeDelta {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--success);
+  margin-top: 2px;
+}
+
+.gaugeOpp {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-top: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.gaugeOppLabel {
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-top: 1px;
+}
+
+.stageTrack {
+  height: 9px;
+  border-radius: var(--r-pill);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.stageFill {
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: linear-gradient(90deg, var(--brand-blue) 0%, var(--brand-violet) 100%);
+  position: relative;
+  transition: width 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* A faint sheen along the top of the bar — reads as a subtle glassy highlight. */
+.stageFill::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 45%;
+  border-radius: var(--r-pill);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.22), transparent);
+}
+
+/* Per-stage colour walk across the brand spectrum: blue → violet → magenta,
+   so the funnel reads as one gradient family, distinct per row. */
+.stage[data-stage='0'] .stageFill {
+  background: linear-gradient(90deg, #0087ff 0%, #3a9bff 100%);
+}
+.stage[data-stage='1'] .stageFill {
+  background: linear-gradient(90deg, #1f7dff 0%, #5a6bff 100%);
+}
+.stage[data-stage='2'] .stageFill {
+  background: linear-gradient(90deg, #4a63ff 0%, #782cff 100%);
+}
+.stage[data-stage='3'] .stageFill {
+  background: linear-gradient(90deg, #782cff 0%, #9a35ff 100%);
+}
+/* Negociação → amber, Cliente (Ganho) → green, matching the mockup. */
+.stage[data-stage='4'] .stageFill {
+  background: linear-gradient(90deg, #f5b544 0%, #f59e0b 100%);
+}
+.stage[data-stage='5'] .stageFill {
+  background: linear-gradient(90deg, #34d399 0%, #10b981 100%);
+}
+
+.stageCount {
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  min-width: 26px;
+  text-align: right;
+  color: var(--text);
+}
+
+.funnelFootnote {
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+/* AI insight card --------------------------------------------------------- */
+
+.aiCard {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-lg);
+  padding: 18px;
+  border: 1px solid rgba(120, 44, 255, 0.4);
+  background:
+    radial-gradient(300px 160px at 100% 0%, rgba(176, 38, 255, 0.16), transparent 70%),
+    radial-gradient(260px 160px at 0% 100%, rgba(0, 135, 255, 0.14), transparent 70%),
+    linear-gradient(160deg, #0c1330 0%, #0b1024 100%);
+  box-shadow: var(--glow-brand);
+}
+
+.aiTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 13px;
+}
+
+.aiBrand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.aiMark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--r-sm);
+  background: var(--brand-gradient);
+  color: #fff;
+  box-shadow: 0 6px 16px -8px rgba(0, 135, 255, 0.9);
+}
+
+.aiSix {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.aiBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #9fe3c4;
+  background: var(--success-soft);
+  border: 1px solid rgba(52, 211, 153, 0.32);
+  white-space: nowrap;
+}
+
+.aiBadgeDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success);
+}
+
+.aiTitle {
+  font-size: 16.5px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  margin-bottom: 8px;
+}
+
+.aiGradient {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.aiText {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.55;
+  margin-bottom: 15px;
+}
+
+.aiActions {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+}
+
+/* Lists ------------------------------------------------------------------- */
+
+.list {
+  display: flex;
+  flex-direction: column;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 18px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  transition: background-color 0.16s ease;
+}
+
+.row:last-child {
+  border-bottom: none;
+}
+
+/* Hover reveals a faint brand-tinted wash plus a gradient accent rail. */
+.row:hover {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 135, 255, 0.06) 0%,
+    rgba(120, 44, 255, 0.03) 60%,
+    transparent 100%
+  );
+}
+
+.row:hover::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  background: var(--brand-gradient);
+}
+
+.rowText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+}
+
+.rowTitle {
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowSubtitle {
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rowMeta {
+  font-size: 11.5px;
+  color: var(--text-faint);
+  white-space: nowrap;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Time chip used by follow-ups and agenda. */
+.timeChip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  padding: 5px 0;
+  border-radius: var(--r-md);
+  background: var(--brand-gradient-soft);
+  border: 1px solid rgba(120, 44, 255, 0.22);
+  font-size: 12.5px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #cdd9f5;
+  flex-shrink: 0;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-left: 2px;
+  box-shadow: 0 0 6px currentColor;
+}
+
+/* Follow-up rows --------------------------------------------------------- */
+
+.fuRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  transition: background-color 0.16s ease;
+}
+
+.fuRow:last-child {
+  border-bottom: none;
+}
+
+.fuRow:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.fuCheck {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border-strong);
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+
+.fuCompany {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.fuStatus {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: var(--r-pill);
+  white-space: nowrap;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+}
+
+.fuLate {
+  color: var(--danger);
+  background: var(--danger-soft);
+  border-color: rgba(244, 114, 107, 0.32);
+}
+
+.fuSoon {
+  color: #6ba6ff;
+  background: rgba(0, 135, 255, 0.12);
+  border-color: rgba(0, 135, 255, 0.3);
+}
+
+.fuScheduled {
+  color: var(--text-muted);
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+}
+
+/* Agenda rows ------------------------------------------------------------- */
+
+.agRow {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  transition: background-color 0.16s ease;
+}
+
+.agRow:last-child {
+  border-bottom: none;
+}
+
+.agRow:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.agRail {
+  width: 3px;
+  align-self: stretch;
+  border-radius: var(--r-pill);
+  background: var(--brand-violet);
+  flex-shrink: 0;
+}
+
+.agMeet {
+  background: var(--brand-blue);
+}
+.agTeams {
+  background: var(--brand-violet);
+}
+.agZoom {
+  background: var(--brand-cyan);
+}
+
+.agTime {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 84px;
+}
+
+.agPlatform {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Activity type chip — circular, colour-coded per event type. */
+.activityIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.activityIcon[data-tone='cyan'] {
+  color: #4fd6ea;
+  background: rgba(34, 211, 238, 0.12);
+}
+.activityIcon[data-tone='blue'] {
+  color: #6ba6ff;
+  background: rgba(0, 135, 255, 0.12);
+}
+.activityIcon[data-tone='magenta'] {
+  color: #e29bff;
+  background: rgba(176, 38, 255, 0.12);
+}
+.activityIcon[data-tone='violet'] {
+  color: #b6a2ff;
+  background: rgba(120, 44, 255, 0.12);
+}
+.activityIcon[data-tone='amber'] {
+  color: #f5c451;
+  background: rgba(245, 181, 68, 0.12);
+}

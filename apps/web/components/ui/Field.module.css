@@ -1,0 +1,102 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.label {
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--text-muted);
+  letter-spacing: 0.005em;
+}
+
+.inputWrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.leading {
+  position: absolute;
+  left: 11px;
+  display: flex;
+  color: var(--text-faint);
+  pointer-events: none;
+}
+
+.trailing {
+  position: absolute;
+  right: 5px;
+  display: flex;
+}
+
+.input {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-md);
+  color: var(--text);
+  font-size: 14px;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.withLeading {
+  padding-left: 36px;
+}
+
+.withTrailing {
+  padding-right: 42px;
+}
+
+.input::placeholder {
+  color: var(--text-faint);
+}
+
+.input:hover:not(:disabled) {
+  border-color: #33405e;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: var(--surface);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.invalid,
+.invalid:hover:not(:disabled) {
+  border-color: rgba(244, 114, 107, 0.6);
+}
+
+.invalid:focus {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px var(--danger-soft);
+}
+
+.hint {
+  font-size: 11.5px;
+  color: var(--text-faint);
+}
+
+.error {
+  font-size: 12px;
+  color: var(--danger);
+}
+
+/* Compact search input used in toolbars. */
+.search .input {
+  height: 36px;
+  font-size: 13px;
+}

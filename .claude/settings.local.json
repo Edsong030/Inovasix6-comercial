@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($env:PORT=3100; Start-Job -Name webstart -ScriptBlock { Set-Location \"C:\\\\Users\\\\user\\\\Desktop\\\\inova flow\\\\apps\\\\web\"; $env:PORT=3100; npx next start -p 3100 } | Out-Null; Start-Sleep -Seconds 9; try { $r = Invoke-WebRequest -Uri \"http://localhost:3100/login\" -UseBasicParsing -TimeoutSec 20; Write-Output \"STATUS: $\\($r.StatusCode\\)\"; Write-Output \"HAS_FORM: $\\($r.Content -match 'Entrar na plataforma'\\)\"; Write-Output \"HAS_EMPRESA: $\\($r.Content -match 'Empresa'\\)\"; Write-Output \"LEN: $\\($r.Content.Length\\)\" } catch { Write-Output \"ERR: $_\" })",
+      "PowerShell(try { $l = Invoke-WebRequest -Uri \"http://localhost:3100/login\" -UseBasicParsing -TimeoutSec 20; Write-Output \"LOGIN has loader: $\\($l.Content -match 'Verificando sess'\\)\" } catch { Write-Output \"ERR $_\" }; foreach \\($p in @\\('/','/inbox','/crm','/leads','/agenda','/knowledge','/followups','/team','/settings'\\)\\) { try { $r = Invoke-WebRequest -Uri \"http://localhost:3100$p\" -UseBasicParsing -TimeoutSec 20; $leak = \\($r.Content -match 'Maria Silva'\\) -or \\($r.Content -match 'Funil comercial'\\) -or \\($r.Content -match 'Novos leads'\\); Write-Output \"$p -> $\\($r.StatusCode\\) guard=$\\($r.Content -match 'Restaurando sess'\\) privateLeak=$leak\" } catch { Write-Output \"$p -> ERR $_\" } })",
+      "Bash(node -e \"console.log\\(require.resolve\\('next/dist/bin/next'\\)\\)\")",
+      "Bash(node -e ' *)"
+    ]
+  }
+}

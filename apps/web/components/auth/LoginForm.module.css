@@ -1,0 +1,240 @@
+.page {
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 1fr;
+  background: var(--bg);
+  position: relative;
+  overflow: hidden;
+}
+
+@media (min-width: 1024px) {
+  .page {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Ambient brand orbs — blue bloom top-left, magenta bloom bottom-right, the
+   signature Inovasix lighting. Kept low-opacity so the form stays crisp. */
+.page::before {
+  content: '';
+  position: absolute;
+  top: -22%;
+  left: -8%;
+  width: 740px;
+  height: 740px;
+  background: radial-gradient(circle at 35% 35%, rgba(0, 135, 255, 0.2) 0%, transparent 62%);
+  pointer-events: none;
+}
+
+.page::after {
+  content: '';
+  position: absolute;
+  bottom: -30%;
+  right: -12%;
+  width: 680px;
+  height: 680px;
+  background: radial-gradient(circle at 60% 40%, rgba(176, 38, 255, 0.17) 0%, transparent 64%);
+  pointer-events: none;
+}
+
+/* Form column ------------------------------------------------------------- */
+
+.formColumn {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+.card {
+  width: 100%;
+  max-width: 396px;
+  position: relative;
+  background: linear-gradient(180deg, rgba(14, 20, 40, 0.9) 0%, rgba(6, 12, 28, 0.92) 100%);
+  border: 1px solid rgba(120, 44, 255, 0.22);
+  border-radius: var(--r-xl);
+  padding: 30px 30px 26px;
+  box-shadow:
+    var(--shadow-lg),
+    0 0 0 1px rgba(255, 255, 255, 0.02) inset;
+  backdrop-filter: blur(12px);
+}
+
+/* Thin gradient hairline along the card's top edge — a premium brand accent. */
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  background: linear-gradient(90deg, transparent, rgba(0, 135, 255, 0.7), rgba(176, 38, 255, 0.7), transparent);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 24px;
+}
+
+.mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--brand-gradient);
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+  box-shadow: 0 8px 22px -8px rgba(0, 135, 255, 0.9);
+}
+
+.brandName {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.brandSix {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 800;
+}
+
+.title {
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  margin-bottom: 5px;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 22px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 10px 12px;
+  border-radius: var(--r-md);
+  background: var(--danger-soft);
+  border: 1px solid rgba(244, 114, 107, 0.32);
+  color: #ffb9b4;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.alertIcon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--danger);
+}
+
+.submit {
+  margin-top: 4px;
+}
+
+.footNote {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 11.5px;
+  color: var(--text-faint);
+  line-height: 1.5;
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+}
+
+.footIcon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--text-faint);
+}
+
+/* Brand column ------------------------------------------------------------ */
+
+.aside {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .aside {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 26px;
+    padding: 56px 64px;
+    border-left: 1px solid var(--border);
+    background: linear-gradient(200deg, rgba(19, 24, 41, 0.55) 0%, transparent 60%);
+  }
+}
+
+.asideTitle {
+  font-size: 28px;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.22;
+  max-width: 16ch;
+}
+
+.asideText {
+  font-size: 14px;
+  color: var(--text-muted);
+  max-width: 46ch;
+  line-height: 1.6;
+}
+
+.highlights {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 4px;
+}
+
+.highlight {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+.highlightIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-md);
+  background: var(--brand-gradient-soft);
+  border: 1px solid rgba(120, 44, 255, 0.28);
+  color: #b7c6ff;
+  flex-shrink: 0;
+}
+
+.highlightTitle {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.highlightText {
+  font-size: 12.5px;
+  color: var(--text-faint);
+  max-width: 40ch;
+}

@@ -1,0 +1,348 @@
+/*
+ * Inovasix Flow AI — design tokens.
+ * Dark, corporate, low-noise: near-black navy ground, restrained violet/blue
+ * accents, hairline borders. Every colour used by a component comes from a
+ * token here so the palette stays one system.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Ground → elevated surfaces.
+     Aligned to the Inovasix institutional site: near-black navy ground (#020817)
+     rising to translucent-feeling elevated surfaces. */
+  --bg: #020817;
+  --bg-subtle: #060c1c;
+  --surface: #0b1224;
+  --surface-2: #10182e;
+  --surface-hover: #16203c;
+  --surface-active: #1b2748;
+
+  /* Hairlines — white-translucent feel like the site's glass borders. */
+  --border: #1a2440;
+  --border-strong: #2b3a5e;
+
+  /* Type */
+  --text: #eef2fb;
+  --text-muted: #b3bdd6;
+  --text-faint: #6f7b9c;
+
+  /* Brand triad (Inovasix): blue → violet → magenta. */
+  --brand-blue: #0087ff;
+  --brand-violet: #782cff;
+  --brand-magenta: #b026ff;
+
+  /* Accents — the primary action colour is the brand blue-violet. */
+  --accent: #6d5efc;
+  --accent-hover: #7d70ff;
+  --accent-press: #5b4ce8;
+  --accent-blue: #0087ff;
+  --accent-soft: rgba(120, 44, 255, 0.15);
+  --accent-line: rgba(120, 44, 255, 0.36);
+
+  /* Brand signature gradient (headings, primary button, marks). */
+  --brand-gradient: linear-gradient(92deg, #0087ff 0%, #782cff 58%, #b026ff 100%);
+  --brand-gradient-soft: linear-gradient(
+    135deg,
+    rgba(0, 135, 255, 0.18) 0%,
+    rgba(176, 38, 255, 0.18) 100%
+  );
+
+  /* Cyan — the fourth brand accent used for "leads" / attendance highlights. */
+  --brand-cyan: #22d3ee;
+
+  /* --------------------------------------------------------------------------
+   * Public design-system aliases (--inova-*). Components may reference either
+   * these or the internal names above; both resolve to the one Inovasix6
+   * Comercial IA palette, so there is a single source of truth.
+   * ------------------------------------------------------------------------ */
+  --inova-bg: var(--bg);
+  --inova-surface: var(--surface);
+  --inova-surface-hover: var(--surface-hover);
+  --inova-border: var(--border);
+  --inova-border-hover: var(--border-strong);
+  --inova-blue: var(--brand-blue);
+  --inova-violet: var(--brand-violet);
+  --inova-magenta: var(--brand-magenta);
+  --inova-cyan: var(--brand-cyan);
+  --inova-text: var(--text);
+  --inova-text-muted: var(--text-muted);
+  --inova-success: var(--success);
+  --inova-warning: var(--warning);
+  --inova-danger: var(--danger);
+  --inova-glow: var(--glow-brand);
+  --inova-gradient: var(--brand-gradient);
+  --inova-radius: var(--r-lg);
+
+  /* Semantics */
+  --success: #34d399;
+  --success-soft: rgba(52, 211, 153, 0.13);
+  --warning: #f5b544;
+  --warning-soft: rgba(245, 181, 68, 0.13);
+  --danger: #f4726b;
+  --danger-soft: rgba(244, 114, 107, 0.13);
+  --info: #56b6f0;
+  --info-soft: rgba(86, 182, 240, 0.13);
+
+  /* Shape */
+  --r-sm: 6px;
+  --r-md: 9px;
+  --r-lg: 13px;
+  --r-xl: 18px;
+  --r-pill: 999px;
+
+  /* Depth — subtle, never dramatic */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 6px 20px -8px rgba(0, 0, 0, 0.65);
+  --shadow-lg: 0 24px 60px -24px rgba(0, 0, 0, 0.8);
+  --glow: 0 0 0 1px var(--accent-line), 0 12px 40px -18px rgba(120, 44, 255, 0.55);
+  /* Brand hover glow — dual blue + magenta, as on the institutional cards. */
+  --glow-brand: 0 0 0 1px rgba(120, 44, 255, 0.28), 0 18px 50px -22px rgba(0, 135, 255, 0.45),
+    0 18px 50px -26px rgba(176, 38, 255, 0.4);
+
+  /* Layout */
+  --sidebar-w: 248px;
+  --sidebar-w-compact: 72px;
+  --topbar-h: 60px;
+
+  --font-sans:
+    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+    sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  position: relative;
+}
+
+/* Ambient depth — the Inovasix "orbs": soft blue/violet/magenta light blooms
+   fixed behind all content. Deliberately low opacity so text stays legible;
+   never a loud wallpaper. Sits below everything (z-index -1) and ignores
+   pointer events. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(620px 620px at 12% -8%, rgba(0, 135, 255, 0.13), transparent 62%),
+    radial-gradient(680px 680px at 92% 4%, rgba(176, 38, 255, 0.11), transparent 60%),
+    radial-gradient(720px 720px at 50% 118%, rgba(120, 44, 255, 0.1), transparent 60%);
+}
+
+/* A faint technical grid, masked so it fades out — echoes the site's bg-grid. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 64px 64px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 0%, transparent 72%);
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, #000 0%, transparent 72%);
+  opacity: 0.6;
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+figure {
+  margin: 0;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-weight: 600;
+  letter-spacing: -0.015em;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+ul,
+ol {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* One consistent, high-contrast focus ring across the whole product. */
+:focus-visible {
+  outline: 2px solid var(--accent-hover);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+/* Scrollbars tuned to the dark ground so they do not read as bright seams. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: var(--r-pill);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: #384462;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/* Visually hidden, still announced by screen readers. Used for labels whose
+   visual context is already obvious (search fields, composers). */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Keyboard-only shortcut to the main region. */
+.skipLink {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 200;
+  padding: 10px 16px;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 0 0 var(--r-md) 0;
+  font-weight: 600;
+}
+
+.skipLink:focus {
+  left: 0;
+}
+
+/* Text set in the brand gradient — used sparingly (a single word in a heading),
+   never on whole paragraphs. */
+.brandGradientText {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Entrance animations. Applied via a utility class so they are opt-in and
+   composed from transform + opacity only (cheap, GPU-friendly). */
+@keyframes inoFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes inoRiseIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animateFade {
+  animation: inoFadeIn 0.4s ease both;
+}
+
+.animateRise {
+  animation: inoRiseIn 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Stagger helper for lists/grids of cards entering together. */
+.animateRise[data-index='0'] {
+  animation-delay: 0ms;
+}
+.animateRise[data-index='1'] {
+  animation-delay: 45ms;
+}
+.animateRise[data-index='2'] {
+  animation-delay: 90ms;
+}
+.animateRise[data-index='3'] {
+  animation-delay: 135ms;
+}
+.animateRise[data-index='4'] {
+  animation-delay: 180ms;
+}
+.animateRise[data-index='5'] {
+  animation-delay: 225ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
+  /* No motion means no translate — reveal immediately, in place. */
+  .animateRise,
+  .animateFade {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

@@ -1,0 +1,180 @@
+/** Shapes mirrored from the API contract (dashboard, leads, pipelines). */
+
+export type LeadStatus = 'OPEN' | 'WON' | 'LOST';
+
+export interface DashboardSummary {
+  metrics: {
+    newLeads: number;
+    pipelineValue: number;
+    scheduledMeetings: number;
+    monthlySales: number;
+    conversionRate: number;
+  };
+  funnel: Array<{ id: string; label: string; count: number; percent: number }>;
+  followUpsToday: Array<{
+    id: string;
+    name: string;
+    company: string | null;
+    time: string;
+    reason: string;
+  }>;
+  agendaToday: Array<{ id: string; name: string; time: string }>;
+  recentActivity: Array<{
+    id: string;
+    action: string;
+    entity: string;
+    entityId: string | null;
+    time: string;
+  }>;
+}
+
+export interface LeadItem {
+  id: string;
+  name: string;
+  company: string | null;
+  email: string | null;
+  phone: string | null;
+  amountCents: number | null;
+  status: LeadStatus;
+  stageId: string;
+  stageName: string;
+  ownerName: string | null;
+  source: string | null;
+  interest: string | null;
+  lastInteractionAt: string;
+  nextActionAt: string | null;
+  createdAt: string;
+}
+
+export interface LeadListResult {
+  items: LeadItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface PipelineStageView {
+  id: string;
+  name: string;
+  position: number;
+}
+
+export interface PipelineView {
+  id: string;
+  name: string;
+  isDefault: boolean;
+  stages: PipelineStageView[];
+}
+
+export interface CreateLeadInput {
+  name: string;
+  company?: string;
+  email?: string;
+  phone?: string;
+  amountCents?: number;
+  stageId?: string;
+  ownerUserId?: string;
+  source?: string;
+  interest?: string;
+}
+
+// -- Follow-ups ---------------------------------------------------------------
+
+export type FollowUpStatus = 'PENDING' | 'COMPLETED' | 'CANCELED';
+export type FollowUpType = 'CALL' | 'EMAIL' | 'WHATSAPP' | 'MEETING' | 'OTHER';
+export type FollowUpPriority = 'LOW' | 'MEDIUM' | 'HIGH';
+
+export interface FollowUpItem {
+  id: string;
+  leadId: string;
+  leadName: string;
+  leadCompany: string | null;
+  ownerUserId: string | null;
+  ownerName: string | null;
+  title: string;
+  description: string | null;
+  type: FollowUpType;
+  priority: FollowUpPriority;
+  status: FollowUpStatus;
+  scheduledAt: string;
+  completedAt: string | null;
+  canceledAt: string | null;
+  /** Derived by the API: status = PENDING and scheduledAt < now. */
+  overdue: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface FollowUpListResult {
+  items: FollowUpItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface CreateFollowUpInput {
+  leadId: string;
+  ownerUserId?: string;
+  title: string;
+  description?: string;
+  type?: FollowUpType;
+  priority?: FollowUpPriority;
+  scheduledAt: string;
+}
+
+export interface UpdateFollowUpInput {
+  leadId?: string;
+  ownerUserId?: string;
+  title?: string;
+  description?: string;
+  type?: FollowUpType;
+  priority?: FollowUpPriority;
+}
+
+// -- Calendar / Agenda ---------------------------------------------------------
+
+export type CalendarEventStatus = 'SCHEDULED' | 'COMPLETED' | 'CANCELED';
+export type CalendarEventType = 'MEETING' | 'CALL' | 'TASK' | 'OTHER';
+
+export interface CalendarEventItem {
+  id: string;
+  leadId: string | null;
+  leadName: string | null;
+  ownerUserId: string | null;
+  ownerName: string | null;
+  title: string;
+  description: string | null;
+  type: CalendarEventType;
+  status: CalendarEventStatus;
+  startsAt: string;
+  endsAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CalendarEventListResult {
+  items: CalendarEventItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface CreateCalendarEventInput {
+  leadId?: string;
+  ownerUserId?: string;
+  title: string;
+  description?: string;
+  type?: CalendarEventType;
+  startsAt: string;
+  endsAt?: string;
+}
+
+export interface UpdateCalendarEventInput {
+  leadId?: string;
+  ownerUserId?: string;
+  title?: string;
+  description?: string;
+  type?: CalendarEventType;
+  startsAt?: string;
+  endsAt?: string;
+}

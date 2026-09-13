@@ -134,6 +134,19 @@ async function errorMessage(response: Response): Promise<string> {
   if (response.status === 429) {
     return 'Muitas tentativas. Aguarde um minuto e tente novamente.';
   }
+  // Surface the backend's own message for other 4xx/5xx (validation errors,
+  // 404s, 409 status-transition conflicts) instead of a generic string — the
+  // UI needs the real reason (e.g. "Follow-up cancelado não pode ser
+  // concluído."), not just "something went wrong". Never used for 401/403/429
+  // above, which stay generic on purpose (anti-enumeration).
+  try {
+    const body: unknown = await response.json();
+    const message = (body as { message?: unknown } | undefined)?.message;
+    if (typeof message === 'string' && message.trim()) return message;
+    if (Array.isArray(message) && message.length > 0) return message.join(' ');
+  } catch {
+    // Body missing/not JSON — fall through to the generic message below.
+  }
   return 'Não foi possível concluir a operação. Tente novamente.';
 }
 

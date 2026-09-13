@@ -33,4 +33,17 @@ describe('RolesGuard', () => {
     const guard = new RolesGuard(reflector);
     expect(() => guard.canActivate(ctxWithRoles([RoleCode.ATENDENTE]))).toThrow(ForbiddenException);
   });
+
+  it('fails closed (denies) when tenantContext is entirely missing and roles are required', () => {
+    const reflector = {
+      getAllAndOverride: () => [RoleCode.ADMIN],
+    } as unknown as Reflector;
+    const guard = new RolesGuard(reflector);
+    const ctxNoTenantContext = {
+      switchToHttp: () => ({ getRequest: () => ({}) }),
+      getHandler: () => ({}),
+      getClass: () => ({}),
+    } as unknown as ExecutionContext;
+    expect(() => guard.canActivate(ctxNoTenantContext)).toThrow(ForbiddenException);
+  });
 });

@@ -10,9 +10,12 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { RoleCode } from '@prisma/client';
 import { CurrentTenant } from '../../common/tenant/current-tenant.decorator';
 import type { TenantContext } from '../../common/tenant/tenant-context';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { Roles } from '../auth/roles.decorator';
+import { RolesGuard } from '../auth/roles.guard';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { ListLeadsQueryDto } from './dto/list-leads.dto';
 import { MoveLeadDto } from './dto/move-lead.dto';
@@ -21,12 +24,13 @@ import { LeadsService, type LeadListItem, type LeadListResult } from './leads.se
 
 @ApiTags('Leads')
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('leads')
 export class LeadsController {
   constructor(private readonly leads: LeadsService) {}
 
   @Get()
+  @Roles(RoleCode.ADMIN, RoleCode.GESTOR, RoleCode.COMERCIAL, RoleCode.ATENDENTE)
   @ApiOperation({ summary: 'Lista leads do tenant com busca, filtros e paginação.' })
   list(
     @CurrentTenant() ctx: TenantContext,
@@ -36,6 +40,7 @@ export class LeadsController {
   }
 
   @Get(':id')
+  @Roles(RoleCode.ADMIN, RoleCode.GESTOR, RoleCode.COMERCIAL, RoleCode.ATENDENTE)
   @ApiOperation({ summary: 'Detalhe do lead. Cross-tenant retorna 404.' })
   @ApiResponse({ status: 404, description: 'Lead inexistente ou de outro tenant.' })
   getById(
@@ -46,6 +51,7 @@ export class LeadsController {
   }
 
   @Post()
+  @Roles(RoleCode.ADMIN, RoleCode.GESTOR, RoleCode.COMERCIAL, RoleCode.ATENDENTE)
   @ApiOperation({ summary: 'Cria um lead (e o contato associado) no tenant atual.' })
   create(
     @CurrentTenant() ctx: TenantContext,
@@ -55,6 +61,7 @@ export class LeadsController {
   }
 
   @Patch(':id')
+  @Roles(RoleCode.ADMIN, RoleCode.GESTOR, RoleCode.COMERCIAL)
   @ApiOperation({ summary: 'Atualiza campos comerciais do lead.' })
   update(
     @CurrentTenant() ctx: TenantContext,
@@ -65,6 +72,7 @@ export class LeadsController {
   }
 
   @Patch(':id/stage')
+  @Roles(RoleCode.ADMIN, RoleCode.GESTOR, RoleCode.COMERCIAL)
   @ApiOperation({ summary: 'Move o lead para outra etapa do mesmo tenant.' })
   moveStage(
     @CurrentTenant() ctx: TenantContext,

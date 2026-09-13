@@ -21,6 +21,13 @@ describe('Leads + RLS (integration)', () => {
   const tenantB = randomUUID();
   const ctxA: TenantContext = { tenantId: tenantA, userId: randomUUID(), roleCodes: ['ADMIN'] };
   const ctxB: TenantContext = { tenantId: tenantB, userId: randomUUID(), roleCodes: ['ADMIN'] };
+  // Same tenant A, but a non-admin role — proves tenant isolation is enforced by
+  // RLS regardless of role, independent of the RBAC layer added on the controller.
+  const ctxAComercial: TenantContext = {
+    tenantId: tenantA,
+    userId: randomUUID(),
+    roleCodes: ['COMERCIAL'],
+  };
 
   const stageA = randomUUID();
   const stageA2 = randomUUID();
@@ -93,6 +100,10 @@ describe('Leads + RLS (integration)', () => {
 
   it('tenant A cannot move a tenant B lead (404)', async () => {
     await expect(service.moveStage(ctxA, leadBId, stageA2)).rejects.toMatchObject({ status: 404 });
+  });
+
+  it('RBAC does not weaken RLS: a non-admin role in tenant A still cannot read a tenant B lead (404)', async () => {
+    await expect(service.getById(ctxAComercial, leadBId)).rejects.toMatchObject({ status: 404 });
   });
 
   it('tenant A cannot move its lead into a tenant B stage (400)', async () => {

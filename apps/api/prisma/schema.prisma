@@ -50,6 +50,39 @@ enum MessageStatus {
   FAILED
 }
 
+enum FollowUpType {
+  CALL
+  EMAIL
+  WHATSAPP
+  MEETING
+  OTHER
+}
+
+enum FollowUpPriority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum FollowUpStatus {
+  PENDING
+  COMPLETED
+  CANCELED
+}
+
+enum CalendarEventType {
+  MEETING
+  CALL
+  TASK
+  OTHER
+}
+
+enum CalendarEventStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELED
+}
+
 // ---------------------------------------------------------------------------
 // Multi-tenant FK integrity strategy
 // ---------------------------------------------------------------------------
@@ -84,6 +117,8 @@ model Tenant {
   conversations  Conversation[]
   messages       Message[]
   auditLogs      AuditLog[]
+  followUps      FollowUp[]
+  calendarEvents CalendarEvent[]
 
   @@map("tenants")
 }
@@ -98,12 +133,14 @@ model User {
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
 
-  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  userRoles    UserRole[]
-  authSessions AuthSession[]
-  ownedLeads   Lead[]        @relation("LeadOwner")
+  tenant              Tenant          @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  userRoles           UserRole[]
+  authSessions        AuthSession[]
+  ownedLeads          Lead[]          @relation("LeadOwner")
+  ownedFollowUps      FollowUp[]      @relation("FollowUpOwner")
+  ownedCalendarEvents CalendarEvent[] @relation("CalendarEventOwner")
 
-  // Enables composite FKs [tenantId, id] from children (AuthSession, UserRole, Lead.owner).
+  // Enables composite FKs [tenantId, id] from children (AuthSession, UserRole, Lead.owner, FollowUp.owner, CalendarEvent.owner).
   @@unique([tenantId, id])
   @@unique([tenantId, email])
   @@index([tenantId, status])
@@ -234,15 +271,17 @@ model Lead {
   createdAt       DateTime   @default(now()) @map("created_at")
   updatedAt       DateTime   @updatedAt @map("updated_at")
 
-  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  contact       Contact       @relation(fields: [tenantId, contactId], references: [tenantId, id], onDelete: Restrict)
-  pipelineStage PipelineStage @relation(fields: [tenantId, pipelineStageId], references: [tenantId, id], onDelete: Restrict)
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  contact        Contact         @relation(fields: [tenantId, contactId], references: [tenantId, id], onDelete: Restrict)
+  pipelineStage  PipelineStage   @relation(fields: [tenantId, pipelineStageId], references: [tenantId, id], onDelete: Restrict)
   // Nullable owner preserved. Composite FK keeps the owner in the same tenant.
   // NoAction (not SetNull) because the composite FK includes the NON-nullable
   // tenantId, which cannot be nulled. The application reassigns/clears
   // ownerUserId (within the tenant's RLS scope) before removing a user.
-  owner         User?         @relation("LeadOwner", fields: [tenantId, ownerUserId], references: [tenantId, id], onDelete: NoAction)
-  conversations Conversation[]
+  owner          User?           @relation("LeadOwner", fields: [tenantId, ownerUserId], references: [tenantId, id], onDelete: NoAction)
+  conversations  Conversation[]
+  followUps      FollowUp[]
+  calendarEvents CalendarEvent[]
 
   @@unique([tenantId, id])
   @@index([tenantId, pipelineStageId])
@@ -250,6 +289,69 @@ model Lead {
   @@index([tenantId, contactId])
   @@index([tenantId, ownerUserId, nextActionAt])
   @@map("leads")
+}
+
+// ---------------------------------------------------------------------------
+// Follow-ups & Calendar (real entities — Lead.nextActionAt kept temporarily
+// as a compatibility mirror; these tables are the new source of truth).
+// ---------------------------------------------------------------------------
+
+model FollowUp {
+  id          String           @id @default(uuid()) @db.Uuid
+  tenantId    String           @map("tenant_id") @db.Uuid
+  leadId      String           @map("lead_id") @db.Uuid
+  ownerUserId String?          @map("owner_user_id") @db.Uuid
+  title       String
+  description String?
+  type        FollowUpType     @default(OTHER)
+  priority    FollowUpPriority @default(MEDIUM)
+  status      FollowUpStatus   @default(PENDING)
+  scheduledAt DateTime         @map("scheduled_at")
+  completedAt DateTime?        @map("completed_at")
+  canceledAt  DateTime?        @map("canceled_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  // Composite FK: a follow-up cannot attach to a lead of another tenant.
+  lead   Lead   @relation(fields: [tenantId, leadId], references: [tenantId, id], onDelete: Restrict)
+  // Nullable owner, same NoAction reasoning as Lead.owner (composite FK carries
+  // the non-nullable tenantId, so it cannot be SetNull).
+  owner  User?  @relation("FollowUpOwner", fields: [tenantId, ownerUserId], references: [tenantId, id], onDelete: NoAction)
+
+  @@unique([tenantId, id])
+  @@index([tenantId, status, scheduledAt])
+  @@index([tenantId, ownerUserId, scheduledAt])
+  @@index([tenantId, leadId])
+  @@map("follow_ups")
+}
+
+model CalendarEvent {
+  id          String              @id @default(uuid()) @db.Uuid
+  tenantId    String              @map("tenant_id") @db.Uuid
+  leadId      String?             @map("lead_id") @db.Uuid
+  ownerUserId String?             @map("owner_user_id") @db.Uuid
+  title       String
+  description String?
+  type        CalendarEventType   @default(MEETING)
+  status      CalendarEventStatus @default(SCHEDULED)
+  startsAt    DateTime            @map("starts_at")
+  endsAt      DateTime?           @map("ends_at")
+  createdAt   DateTime            @default(now()) @map("created_at")
+  updatedAt   DateTime            @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  // Optional link to a Lead, kept within the same tenant via composite FK.
+  // NoAction for the same reason as Conversation.lead: the composite FK's
+  // tenantId is non-nullable, so it cannot be SetNull.
+  lead   Lead?  @relation(fields: [tenantId, leadId], references: [tenantId, id], onDelete: NoAction)
+  owner  User?  @relation("CalendarEventOwner", fields: [tenantId, ownerUserId], references: [tenantId, id], onDelete: NoAction)
+
+  @@unique([tenantId, id])
+  @@index([tenantId, status, startsAt])
+  @@index([tenantId, ownerUserId, startsAt])
+  @@index([tenantId, leadId])
+  @@map("calendar_events")
 }
 
 // ---------------------------------------------------------------------------

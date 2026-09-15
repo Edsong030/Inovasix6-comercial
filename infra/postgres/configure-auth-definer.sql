@@ -33,3 +33,6 @@ ALTER FUNCTION public.auth_lookup_login(text, text) OWNER TO inovasix_auth_defin
 -- Only the runtime app role may call it. PUBLIC already revoked by the migration.
 REVOKE ALL ON FUNCTION public.auth_lookup_login(text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.auth_lookup_login(text, text) TO inovasix_app;
+-- The owner runs the dev seed and uses this function to discover the demo
+-- tenant id idempotently under RLS. Harmless in prod (seed never runs there).
+GRANT EXECUTE ON FUNCTION public.auth_lookup_login(text, text) TO inovasix_owner;

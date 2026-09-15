@@ -146,3 +146,170 @@
   font-size: 11.5px;
   color: var(--text-faint);
 }
+
+/* Real-data CRM additions -------------------------------------------------- */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 40px;
+  color: var(--text-muted);
+  font-size: 13px;
+  justify-content: center;
+}
+
+.moveButtons {
+  display: inline-flex;
+  gap: 4px;
+}
+
+.moveBtn {
+  width: 24px;
+  height: 24px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.moveBtn:hover:not(:disabled) {
+  background: var(--surface-hover);
+  color: var(--text);
+  border-color: rgba(120, 44, 255, 0.4);
+}
+
+.moveBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* New-lead drawer ---------------------------------------------------------- */
+
+.drawerScrim {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: rgba(4, 6, 12, 0.6);
+  backdrop-filter: blur(3px);
+  display: flex;
+  justify-content: flex-end;
+  animation: crmScrimIn 0.2s ease both;
+}
+
+@keyframes crmScrimIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.drawer {
+  width: min(420px, 92vw);
+  height: 100%;
+  background: var(--surface);
+  border-left: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  animation: crmDrawerIn 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes crmDrawerIn {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drawerScrim,
+  .drawer {
+    animation: none;
+  }
+}
+
+.drawerHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.drawerTitle {
+  font-size: 15px;
+  font-weight: 650;
+}
+
+.drawerForm {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  overflow-y: auto;
+}
+
+.drawerError {
+  padding: 9px 12px;
+  border-radius: var(--r-md);
+  background: var(--danger-soft);
+  border: 1px solid rgba(244, 114, 107, 0.32);
+  color: #ffb9b4;
+  font-size: 12.5px;
+}
+
+.fieldGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.selectLabel {
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--text-muted);
+}
+
+.select {
+  height: 38px;
+  padding: 0 12px;
+  border-radius: var(--r-md);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  font-size: 13px;
+}
+
+.select:focus {
+  outline: none;
+  border-color: rgba(120, 44, 255, 0.5);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.drawerActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 6px;
+}

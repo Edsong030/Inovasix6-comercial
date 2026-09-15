@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/States';
 import { IconCheck } from '@/components/ui/icons';
-import type { FollowupStatus, FollowupToday } from '@/lib/mock/data';
+import type { FollowupStatus, FollowupVM } from './view-models';
 import styles from './Dashboard.module.css';
 
 const STATUS_CLASS: Record<FollowupStatus, string> = {
@@ -12,7 +12,7 @@ const STATUS_CLASS: Record<FollowupStatus, string> = {
   agendado: styles.fuScheduled,
 };
 
-export function FollowupsCard({ items }: { items: FollowupToday[] }) {
+export function FollowupsCard({ items }: { items: FollowupVM[] }) {
   return (
     <Card ariaLabel="Follow-ups de hoje">
       <CardHeader

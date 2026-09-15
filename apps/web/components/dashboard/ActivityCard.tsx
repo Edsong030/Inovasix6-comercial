@@ -12,7 +12,7 @@ import {
   IconTrend,
   type IconProps,
 } from '@/components/ui/icons';
-import type { ActivityEntry, ActivityType } from '@/lib/mock/data';
+import type { ActivityVM, ActivityType } from './view-models';
 import styles from './Dashboard.module.css';
 
 /** Icon + colour tone per activity type (matches the approved mockup). */
@@ -24,7 +24,7 @@ const ACTIVITY_VISUAL: Record<ActivityType, { icon: ComponentType<IconProps>; to
   negociacao: { icon: IconTrend, tone: 'amber' },
 };
 
-export function ActivityCard({ entries }: { entries: ActivityEntry[] }) {
+export function ActivityCard({ entries }: { entries: ActivityVM[] }) {
   return (
     <Card ariaLabel="Atividade recente">
       <CardHeader

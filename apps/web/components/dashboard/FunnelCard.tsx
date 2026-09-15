@@ -1,10 +1,11 @@
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
-import { FUNNEL_CONVERSION, type FunnelStage } from '@/lib/mock/data';
+import type { FunnelConversionVM, FunnelStageVM } from './view-models';
 import styles from './Dashboard.module.css';
 
 /** Circular conversion gauge, drawn with SVG (no chart library). */
-function ConversionGauge({ rate }: { rate: number }) {
+function ConversionGauge({ conversion }: { conversion: FunnelConversionVM }) {
+  const rate = conversion.rate;
   const radius = 46;
   const circumference = 2 * Math.PI * radius;
   const dash = (rate / 100) * circumference;
@@ -34,14 +35,20 @@ function ConversionGauge({ rate }: { rate: number }) {
         </text>
       </svg>
       <p className={styles.gaugeCaption}>Taxa de conversão</p>
-      <p className={styles.gaugeDelta}>↑ {FUNNEL_CONVERSION.deltaLabel}</p>
-      <p className={styles.gaugeOpp}>{FUNNEL_CONVERSION.opportunities}</p>
+      <p className={styles.gaugeDelta}>↑ {conversion.deltaLabel}</p>
+      <p className={styles.gaugeOpp}>{conversion.opportunities}</p>
       <p className={styles.gaugeOppLabel}>Valor em oportunidades</p>
     </div>
   );
 }
 
-export function FunnelCard({ stages }: { stages: FunnelStage[] }) {
+export function FunnelCard({
+  stages,
+  conversion,
+}: {
+  stages: FunnelStageVM[];
+  conversion: FunnelConversionVM;
+}) {
   return (
     <Card ariaLabel="Funil comercial">
       <CardHeader
@@ -70,7 +77,7 @@ export function FunnelCard({ stages }: { stages: FunnelStage[] }) {
               </div>
             ))}
           </div>
-          <ConversionGauge rate={FUNNEL_CONVERSION.rate} />
+          <ConversionGauge conversion={conversion} />
         </div>
       </CardBody>
     </Card>

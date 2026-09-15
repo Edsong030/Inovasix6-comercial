@@ -9,7 +9,7 @@ import {
   IconTrend,
   type IconProps,
 } from '@/components/ui/icons';
-import type { Metric, MetricAccent } from '@/lib/mock/data';
+import type { MetricVM, MetricAccent } from './view-models';
 import styles from './Dashboard.module.css';
 
 /** Icon per KPI, keyed by the metric id from the mock data. */
@@ -20,8 +20,8 @@ const METRIC_ICON: Record<string, ComponentType<IconProps>> = {
   sales: IconTrend,
 };
 
-/** KPI row (4 headline cards). Values are mocked — no dashboard endpoint yet. */
-export function MetricsGrid({ metrics }: { metrics: Metric[] }) {
+/** KPI row (4 headline cards), fed by the real dashboard summary. */
+export function MetricsGrid({ metrics }: { metrics: MetricVM[] }) {
   return (
     <div
       className={`${styles.grid} ${styles.metrics}`}

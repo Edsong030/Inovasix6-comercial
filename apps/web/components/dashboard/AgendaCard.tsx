@@ -3,17 +3,17 @@ import { Button } from '@/components/ui/Button';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/States';
 import { IconAgenda, IconVideo } from '@/components/ui/icons';
-import type { AgendaEntry, AgendaPlatform } from '@/lib/mock/data';
+import type { AgendaVM } from './view-models';
 import styles from './Dashboard.module.css';
 
 /** Left rail colour per meeting platform (mockup: Meet blue, Teams violet, Zoom cyan). */
-const PLATFORM_TONE: Record<AgendaPlatform, string> = {
+const PLATFORM_TONE: Record<NonNullable<AgendaVM['platform']>, string> = {
   meet: styles.agMeet,
   teams: styles.agTeams,
   zoom: styles.agZoom,
 };
 
-export function AgendaCard({ entries }: { entries: AgendaEntry[] }) {
+export function AgendaCard({ entries }: { entries: AgendaVM[] }) {
   return (
     <Card ariaLabel="Agenda de hoje">
       <CardHeader
@@ -46,7 +46,7 @@ export function AgendaCard({ entries }: { entries: AgendaEntry[] }) {
                   {entry.endTime ? ` - ${entry.endTime}` : ''}
                 </span>
                 <span className={styles.rowText}>
-                  <span className={styles.rowTitle}>{entry.title ?? entry.name}</span>
+                  <span className={styles.rowTitle}>{entry.title}</span>
                   <span className={styles.agPlatform}>
                     <IconVideo size={13} />
                     {entry.kind}

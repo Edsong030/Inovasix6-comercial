@@ -14,7 +14,9 @@ export function AiInsightCard() {
           <span className={styles.aiMark} aria-hidden="true">
             <IconSparkles size={16} />
           </span>
-          Inovasix<span className={styles.aiSix}>6</span>
+          <span className={styles.aiBrandName}>
+            Inovasix<span className={styles.aiSix}>6</span>
+          </span>
         </span>
         <span className={styles.aiBadge}>
           <span className={styles.aiBadgeDot} aria-hidden="true" />

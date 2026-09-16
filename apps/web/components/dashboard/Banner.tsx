@@ -20,7 +20,9 @@ export function Banner() {
           <IconLogo size={22} />
         </span>
         <span className={styles.brandName}>
-          Inovasix<span className={styles.brandSix}>6</span>
+          <span className={styles.brandNameRow}>
+            Inovasix<span className={styles.brandSix}>6</span>
+          </span>
           <span className={styles.brandSuffix}>Comercial IA</span>
         </span>
       </div>

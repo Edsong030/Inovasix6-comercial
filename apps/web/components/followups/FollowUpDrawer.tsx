@@ -1,11 +1,20 @@
 'use client';
 
 import { useEffect, useState, type FormEvent } from 'react';
+import { QuickLeadDrawer } from '@/components/crm/QuickLeadDrawer';
+import {
+  buildLeadSelectOptions,
+  createdLeadNotice,
+  isNewLeadOption,
+  mergeCreatedLead,
+  selectCreatedLead,
+} from '@/components/crm/quickLeadFlow';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { IconClose } from '@/components/ui/icons';
-import { listLeads } from '@/lib/api/resources';
+import { listAssignableUsers, listLeads } from '@/lib/api/resources';
 import type {
+  AssignableUser,
   CreateFollowUpInput,
   FollowUpItem,
   FollowUpPriority,
@@ -50,6 +59,7 @@ interface FollowUpDrawerProps {
 
 const EMPTY = {
   leadId: '',
+  ownerUserId: '',
   title: '',
   description: '',
   type: 'OTHER' as FollowUpType,
@@ -58,8 +68,11 @@ const EMPTY = {
 };
 
 /**
- * Create/edit follow-up. Responsável (owner) is intentionally NOT offered:
- * there is no real endpoint to list tenant users yet (débito, see report).
+ * Create/edit follow-up. The Lead (Cliente) select offers an in-flow
+ * "+ Cadastrar novo cliente" so the user never has to leave to /leads. The
+ * "Atendente responsável" (ownerUserId) is a DISTINCT field listing internal
+ * tenant users — never Leads.
+ *
  * scheduledAt is only editable at creation — changing it afterwards goes
  * through the dedicated reschedule action, matching the backend's rule that
  * a generic update never touches scheduledAt.
@@ -67,15 +80,21 @@ const EMPTY = {
 export function FollowUpDrawer({ open, mode, followUp, onClose, onCreate, onUpdate }: FollowUpDrawerProps) {
   const [form, setForm] = useState(EMPTY);
   const [leads, setLeads] = useState<LeadItem[]>([]);
+  const [users, setUsers] = useState<AssignableUser[]>([]);
+  const [quickLeadOpen, setQuickLeadOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setError(null);
+    setNotice(null);
+    setQuickLeadOpen(false);
     if (mode === 'edit' && followUp) {
       setForm({
         leadId: followUp.leadId,
+        ownerUserId: followUp.ownerUserId ?? '',
         title: followUp.title,
         description: followUp.description ?? '',
         type: followUp.type,
@@ -97,6 +116,13 @@ export function FollowUpDrawer({ open, mode, followUp, onClose, onCreate, onUpda
       .catch(() => {
         if (active) setLeads([]);
       });
+    listAssignableUsers()
+      .then((result) => {
+        if (active) setUsers(result);
+      })
+      .catch(() => {
+        if (active) setUsers([]);
+      });
     return () => {
       active = false;
     };
@@ -115,6 +141,24 @@ export function FollowUpDrawer({ open, mode, followUp, onClose, onCreate, onUpda
 
   const update = (key: keyof typeof EMPTY) => (e: { target: { value: string } }) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const onLeadSelectChange = (e: { target: { value: string } }) => {
+    if (isNewLeadOption(e.target.value)) {
+      setQuickLeadOpen(true);
+      return;
+    }
+    setForm((f) => ({ ...f, leadId: e.target.value }));
+  };
+
+  // A lead was just created in-flow: add it to the list, auto-select it, keep
+  // THIS form open with everything already typed intact, and close only the
+  // quick drawer. Success feedback is shown inline.
+  const handleQuickLeadCreated = (lead: LeadItem) => {
+    setLeads((prev) => mergeCreatedLead(prev, lead));
+    setForm((f) => selectCreatedLead(f, lead));
+    setQuickLeadOpen(false);
+    setNotice(createdLeadNotice(lead));
+  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -138,6 +182,7 @@ export function FollowUpDrawer({ open, mode, followUp, onClose, onCreate, onUpda
       if (mode === 'create') {
         await onCreate({
           leadId: form.leadId,
+          ownerUserId: form.ownerUserId || undefined,
           title: form.title.trim(),
           description: form.description.trim() || undefined,
           type: form.type,
@@ -182,29 +227,55 @@ export function FollowUpDrawer({ open, mode, followUp, onClose, onCreate, onUpda
               {error}
             </p>
           ) : null}
+          {notice ? (
+            <p className={styles.drawerNotice} role="status">
+              {notice}
+            </p>
+          ) : null}
 
           {mode === 'create' ? (
-            <div className={styles.fieldGroup}>
-              <label className={styles.selectLabel} htmlFor="fu-lead">
-                Lead
-              </label>
-              <select
-                id="fu-lead"
-                className={styles.select}
-                value={form.leadId}
-                onChange={update('leadId')}
-                disabled={submitting}
-                required
-              >
-                <option value="">Selecione…</option>
-                {leads.map((lead) => (
-                  <option key={lead.id} value={lead.id}>
-                    {lead.name}
-                    {lead.company ? ` — ${lead.company}` : lead.interest ? ` — ${lead.interest}` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <>
+              <div className={styles.fieldGroup}>
+                <label className={styles.selectLabel} htmlFor="fu-lead">
+                  Cliente / Lead
+                </label>
+                <select
+                  id="fu-lead"
+                  className={styles.select}
+                  value={form.leadId}
+                  onChange={onLeadSelectChange}
+                  disabled={submitting}
+                  required
+                >
+                  <option value="">Selecione…</option>
+                  {buildLeadSelectOptions(leads).map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className={styles.fieldGroup}>
+                <label className={styles.selectLabel} htmlFor="fu-owner">
+                  Atendente responsável (opcional)
+                </label>
+                <select
+                  id="fu-owner"
+                  className={styles.select}
+                  value={form.ownerUserId}
+                  onChange={update('ownerUserId')}
+                  disabled={submitting}
+                >
+                  <option value="">Nenhum</option>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
           ) : null}
 
           <Field label="Título" value={form.title} onChange={update('title')} required disabled={submitting} />
@@ -274,6 +345,12 @@ export function FollowUpDrawer({ open, mode, followUp, onClose, onCreate, onUpda
           </div>
         </form>
       </aside>
+
+      <QuickLeadDrawer
+        open={quickLeadOpen}
+        onClose={() => setQuickLeadOpen(false)}
+        onCreated={handleQuickLeadCreated}
+      />
     </div>
   );
 }

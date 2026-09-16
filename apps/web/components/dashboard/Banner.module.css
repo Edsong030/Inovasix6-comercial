@@ -65,6 +65,19 @@
   color: var(--text);
 }
 
+/*
+ * "Inovasix" and "6" must render as a single, unbreakable brand unit — never
+ * split across lines, never visually separated. Without this wrapper they
+ * would be two SEPARATE children of the flex-column .brandName above, which
+ * makes each one its own flex item and stacks them on their own line (the
+ * bug this fixes). Grouping them into one flex item — with nowrap as a
+ * second, width-independent guarantee — is what keeps "Inovasix6" together
+ * at any width, without resorting to a fixed width.
+ */
+.brandNameRow {
+  white-space: nowrap;
+}
+
 .brandSix {
   background: var(--brand-gradient);
   -webkit-background-clip: text;

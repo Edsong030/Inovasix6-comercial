@@ -1,0 +1,43 @@
+name: Publicar demonstracao
+on:
+  workflow_dispatch:
+  push:
+    branches: [demo]
+permissions:
+  contents: read
+concurrency:
+  group: pages-demo
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Instalar dependencias do frontend
+        run: npm ci --workspace=@inovasix-flow/web --include-workspace-root --ignore-scripts
+      - name: Exportar demonstracao
+        env:
+          NEXT_PUBLIC_DEMO_MODE: 'true'
+          NEXT_PUBLIC_BASE_PATH: /${{ github.event.repository.name }}
+          NEXT_TELEMETRY_DISABLED: '1'
+        run: npm run build --workspace=@inovasix-flow/web
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: apps/web/out
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Publicar no Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

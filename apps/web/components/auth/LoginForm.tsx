@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/icons';
 import { FullScreenLoader } from '@/components/ui/States';
 import { GENERIC_CREDENTIALS_ERROR } from '@/lib/auth/api';
+import { DEMO_MODE } from '@/lib/demo/api';
 import { useAuth } from '@/lib/auth/auth-context';
 import styles from './LoginForm.module.css';
 
@@ -98,12 +99,13 @@ export function LoginForm() {
             </span>
           </div>
 
-          <h1 className={styles.title}>Entrar na plataforma</h1>
-          <p className={styles.subtitle}>
+          <h1 className={styles.title}>{DEMO_MODE ? 'Conheça a demonstração' : 'Entrar na plataforma'}</h1>
+          {DEMO_MODE ? <><p className={styles.subtitle}>Explore a plataforma com dados fictícios, sem cadastro.</p><Button onClick={() => { void signIn('empresa-demo', 'visitante@exemplo.test', 'demo'); }}>Entrar na demonstração</Button></> : null}
+          <p hidden={DEMO_MODE} className={styles.subtitle}>
             Informe a empresa e suas credenciais para acessar a operação.
           </p>
 
-          <form className={styles.form} onSubmit={handleSubmit} noValidate>
+          <form hidden={DEMO_MODE} className={styles.form} onSubmit={handleSubmit} noValidate>
             {/* aria-live so the error is announced when it appears. */}
             <div role="alert" aria-live="assertive">
               {error ? (
@@ -165,7 +167,7 @@ export function LoginForm() {
             </Button>
           </form>
 
-          <p className={styles.footNote}>
+          <p hidden={DEMO_MODE} className={styles.footNote}>
             <span className={styles.footIcon} aria-hidden="true">
               <IconHelp size={14} />
             </span>

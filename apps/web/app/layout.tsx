@@ -1,3 +1,4 @@
+import { DemoBanner } from '@/components/DemoBanner';
 import type { Metadata, Viewport } from 'next';
 import { AuthProvider } from '@/lib/auth/auth-context';
 import './globals.css';
@@ -21,7 +22,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           Ir para o conteúdo principal
         </a>
         {/* Session state is required by both the login screen and the shell. */}
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider><DemoBanner />{children}</AuthProvider>
       </body>
     </html>
   );

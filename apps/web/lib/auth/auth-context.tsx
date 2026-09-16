@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from 'react';
 import * as authApi from './api';
+import { DEMO_MODE } from '../demo/api';
 import {
   companyNameFromSlug,
   displayNameFromEmail,
@@ -74,7 +75,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     mounted.current = true;
     const controller = new AbortController();
-    const stored = readSessionHints();
+    const stored = DEMO_MODE ? { slug: 'empresa-demo', email: 'visitante@exemplo.test' } : readSessionHints();
     setHints({ slug: stored.slug ?? '', email: stored.email ?? '' });
 
     void (async () => {

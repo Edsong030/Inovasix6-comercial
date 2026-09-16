@@ -346,3 +346,7 @@ ol {
     transform: none !important;
   }
 }
+
+.demoNotice { position: relative; z-index: 100; display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 20px; padding: 10px 16px; background: #15314b; color: #fff; font-size: 13px; }
+.demoNotice button { border: 1px solid #91caff; border-radius: 6px; background: transparent; color: white; padding: 5px 10px; cursor: pointer; }
+[hidden] { display: none !important; }

@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/icons';
 import { FullScreenLoader } from '@/components/ui/States';
 import { GENERIC_CREDENTIALS_ERROR } from '@/lib/auth/api';
-import { DEMO_MODE } from '@/lib/demo/api';
+import { DEMO_MODE, DEMO_USER_EMAIL } from '@/lib/demo/api';
 import { useAuth } from '@/lib/auth/auth-context';
 import styles from './LoginForm.module.css';
 
@@ -100,7 +100,7 @@ export function LoginForm() {
           </div>
 
           <h1 className={styles.title}>{DEMO_MODE ? 'Conheça a demonstração' : 'Entrar na plataforma'}</h1>
-          {DEMO_MODE ? <><p className={styles.subtitle}>Explore a plataforma com dados fictícios, sem cadastro.</p><Button onClick={() => { void signIn('empresa-demo', 'visitante@exemplo.test', 'demo'); }}>Entrar na demonstração</Button></> : null}
+          {DEMO_MODE ? <><p className={styles.subtitle}>Explore a plataforma com dados fictícios, sem cadastro.</p><Button onClick={() => { void signIn('empresa-demo', DEMO_USER_EMAIL, 'demo'); }}>Entrar na demonstração</Button></> : null}
           <p hidden={DEMO_MODE} className={styles.subtitle}>
             Informe a empresa e suas credenciais para acessar a operação.
           </p>

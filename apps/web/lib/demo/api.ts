@@ -1,6 +1,8 @@
 import type { LeadItem, FollowUpItem, CalendarEventItem, PipelineView, DashboardSummary } from '../api/types';
 
 export const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === 'true';
+/** Fake sign-in identity for demo mode — the local-part becomes the displayed name/avatar (see lib/auth/identity.ts). */
+export const DEMO_USER_EMAIL = 'edson@exemplo.test';
 const KEY = 'inovasix-demo-v1';
 const SESSION = 'inovasix-demo-session';
 const stages = ['Novo lead', 'Contato realizado', 'Em atendimento', 'Qualificado', 'Proposta enviada', 'Negociação', 'Cliente (Ganho)'].map((name, position) => ({ id: `stage-${position}`, name, position }));
@@ -25,10 +27,18 @@ export function resetDemo() { memory = initial(); save(); window.location.reload
 const response = (data: unknown, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'Content-Type': 'application/json' } });
 function signedOut() { try { return sessionStorage.getItem(SESSION) === 'out'; } catch { return false; } }
 function session(value: string) { try { sessionStorage.setItem(SESSION, value); } catch { /* Optional. */ } }
+/** Mirrors the real API's funnel math (dashboard.service.ts): percent is relative to the top-of-funnel stage, rounded to a whole number, so an intermediate stage never misreads as 100%. */
+function funnelStages(leads: LeadItem[]) {
+  const first = leads.filter(l => l.stageId === stages[0].id).length;
+  return stages.map(stage => {
+    const count = leads.filter(l => l.stageId === stage.id).length;
+    return { id: stage.id, label: stage.name, count, percent: first > 0 ? Math.round(count / first * 100) : 0 };
+  });
+}
 function summary(s: State): DashboardSummary {
   const today = (value: string) => new Date(value).toDateString() === new Date().toDateString();
   const won = s.leads.filter(l => l.status === 'WON');
-  return { metrics: { newLeads: s.leads.filter(l => today(l.createdAt)).length, pipelineValue: s.leads.filter(l => l.status === 'OPEN').reduce((a, l) => a + (l.amountCents ?? 0), 0), scheduledMeetings: s.events.filter(e => e.status === 'SCHEDULED').length, monthlySales: won.reduce((a, l) => a + (l.amountCents ?? 0), 0), conversionRate: s.leads.length ? Math.round(won.length / s.leads.length * 100) : 0 }, funnel: stages.map(stage => { const count = s.leads.filter(l => l.stageId === stage.id).length; return { id: stage.id, label: stage.name, count, percent: s.leads.length ? count / s.leads.length * 100 : 0 }; }), followUpsToday: s.followups.filter(f => f.status === 'PENDING' && today(f.scheduledAt)).map(f => ({ id: f.id, name: f.leadName, company: f.leadCompany, time: new Date(f.scheduledAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), reason: f.title })), agendaToday: s.events.filter(e => e.status === 'SCHEDULED' && today(e.startsAt)).map(e => ({ id: e.id, name: e.title, time: new Date(e.startsAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) })), recentActivity: s.leads.slice(-5).reverse().map(l => ({ id: l.id, action: 'Lead na demonstração', entity: l.name, entityId: l.id, time: l.lastInteractionAt })) };
+  return { metrics: { newLeads: s.leads.filter(l => today(l.createdAt)).length, pipelineValue: s.leads.filter(l => l.status === 'OPEN').reduce((a, l) => a + (l.amountCents ?? 0), 0), scheduledMeetings: s.events.filter(e => e.status === 'SCHEDULED').length, monthlySales: won.reduce((a, l) => a + (l.amountCents ?? 0), 0), conversionRate: s.leads.length ? Math.round(won.length / s.leads.length * 100) : 0 }, funnel: funnelStages(s.leads), followUpsToday: s.followups.filter(f => f.status === 'PENDING' && today(f.scheduledAt)).map(f => ({ id: f.id, name: f.leadName, company: f.leadCompany, time: new Date(f.scheduledAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }), reason: f.title })), agendaToday: s.events.filter(e => e.status === 'SCHEDULED' && today(e.startsAt)).map(e => ({ id: e.id, name: e.title, time: new Date(e.startsAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) })), recentActivity: s.leads.slice(-5).reverse().map(l => ({ id: l.id, action: l.status === 'WON' ? 'LEAD_STAGE_CHANGED' : 'LEAD_CREATED', entity: l.name, entityId: l.id, time: l.lastInteractionAt })) };
 }
 export async function demoRequest(path: string, init: RequestInit): Promise<Response> {
   const url = new URL(path, 'https://demo.invalid'); const p = url.pathname; const q = url.searchParams;

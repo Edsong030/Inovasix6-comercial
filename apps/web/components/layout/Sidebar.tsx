@@ -98,7 +98,9 @@ export function Sidebar({ user, open, onClose }: SidebarProps) {
           <p className={styles.promoText}>Inteligência que gera mais negócios.</p>
           <span className={styles.promoBrand}>
             <IconLogo size={14} />
-            Inovasix<span className={styles.brandSix}>6</span> Comercial IA
+            <span className={styles.promoBrandName}>
+              Inovasix<span className={styles.brandSix}>6</span> Comercial IA
+            </span>
           </span>
         </div>
 

@@ -1,11 +1,20 @@
 'use client';
 
 import { useEffect, useState, type FormEvent } from 'react';
+import { QuickLeadDrawer } from '@/components/crm/QuickLeadDrawer';
+import {
+  buildLeadSelectOptions,
+  createdLeadNotice,
+  isNewLeadOption,
+  mergeCreatedLead,
+  selectCreatedLead,
+} from '@/components/crm/quickLeadFlow';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { IconClose } from '@/components/ui/icons';
-import { listLeads } from '@/lib/api/resources';
+import { listAssignableUsers, listLeads } from '@/lib/api/resources';
 import type {
+  AssignableUser,
   CalendarEventItem,
   CalendarEventType,
   CreateCalendarEventInput,
@@ -38,6 +47,7 @@ interface CalendarEventDrawerProps {
 
 const EMPTY = {
   leadId: '',
+  ownerUserId: '',
   title: '',
   description: '',
   type: 'MEETING' as CalendarEventType,
@@ -46,23 +56,30 @@ const EMPTY = {
 };
 
 /**
- * Create/edit calendar event. Lead and Responsável are both optional here
- * (an event may be purely internal). Responsável is intentionally NOT
- * offered as a real select: there is no endpoint to list tenant users yet
- * (débito, see report) — the field is simply omitted rather than faked.
+ * Create/edit calendar event. Lead (Cliente) and Atendente responsável are
+ * both optional here (an event may be purely internal) and are DISTINCT
+ * concepts: leadId is the Lead/Cliente being served, ownerUserId is the
+ * internal tenant user responsible. The Lead select also offers an in-flow
+ * "+ Cadastrar novo cliente" so the user never has to leave to /leads.
  */
 export function CalendarEventDrawer({ open, mode, event, onClose, onCreate, onUpdate }: CalendarEventDrawerProps) {
   const [form, setForm] = useState(EMPTY);
   const [leads, setLeads] = useState<LeadItem[]>([]);
+  const [users, setUsers] = useState<AssignableUser[]>([]);
+  const [quickLeadOpen, setQuickLeadOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
     setError(null);
+    setNotice(null);
+    setQuickLeadOpen(false);
     if (mode === 'edit' && event) {
       setForm({
         leadId: event.leadId ?? '',
+        ownerUserId: event.ownerUserId ?? '',
         title: event.title,
         description: event.description ?? '',
         type: event.type,
@@ -84,6 +101,13 @@ export function CalendarEventDrawer({ open, mode, event, onClose, onCreate, onUp
       .catch(() => {
         if (active) setLeads([]);
       });
+    listAssignableUsers()
+      .then((result) => {
+        if (active) setUsers(result);
+      })
+      .catch(() => {
+        if (active) setUsers([]);
+      });
     return () => {
       active = false;
     };
@@ -102,6 +126,24 @@ export function CalendarEventDrawer({ open, mode, event, onClose, onCreate, onUp
 
   const update = (key: keyof typeof EMPTY) => (e: { target: { value: string } }) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const onLeadSelectChange = (e: { target: { value: string } }) => {
+    if (isNewLeadOption(e.target.value)) {
+      setQuickLeadOpen(true);
+      return;
+    }
+    setForm((f) => ({ ...f, leadId: e.target.value }));
+  };
+
+  // A lead was just created in-flow: add it to the list, auto-select it, keep
+  // THIS form open with everything already typed intact, and close only the
+  // quick drawer. Success feedback is shown inline.
+  const handleQuickLeadCreated = (lead: LeadItem) => {
+    setLeads((prev) => mergeCreatedLead(prev, lead));
+    setForm((f) => selectCreatedLead(f, lead));
+    setQuickLeadOpen(false);
+    setNotice(createdLeadNotice(lead));
+  };
 
   const handleSubmit = async (event_: FormEvent<HTMLFormElement>) => {
     event_.preventDefault();
@@ -127,6 +169,7 @@ export function CalendarEventDrawer({ open, mode, event, onClose, onCreate, onUp
       if (mode === 'create') {
         await onCreate({
           leadId: form.leadId || undefined,
+          ownerUserId: form.ownerUserId || undefined,
           title: form.title.trim(),
           description: form.description.trim() || undefined,
           type: form.type,
@@ -136,6 +179,7 @@ export function CalendarEventDrawer({ open, mode, event, onClose, onCreate, onUp
       } else if (event) {
         await onUpdate(event.id, {
           leadId: form.leadId || undefined,
+          ownerUserId: form.ownerUserId || undefined,
           title: form.title.trim(),
           description: form.description.trim() || undefined,
           type: form.type,
@@ -173,23 +217,47 @@ export function CalendarEventDrawer({ open, mode, event, onClose, onCreate, onUp
               {error}
             </p>
           ) : null}
+          {notice ? (
+            <p className={styles.drawerNotice} role="status">
+              {notice}
+            </p>
+          ) : null}
 
           <div className={styles.fieldGroup}>
             <label className={styles.selectLabel} htmlFor="ce-lead">
-              Lead (opcional)
+              Cliente / Lead (opcional)
             </label>
             <select
               id="ce-lead"
               className={styles.select}
               value={form.leadId}
-              onChange={update('leadId')}
+              onChange={onLeadSelectChange}
               disabled={submitting}
             >
               <option value="">Nenhum</option>
-              {leads.map((lead) => (
-                <option key={lead.id} value={lead.id}>
-                  {lead.name}
-                  {lead.company ? ` — ${lead.company}` : lead.interest ? ` — ${lead.interest}` : ''}
+              {buildLeadSelectOptions(leads).map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className={styles.fieldGroup}>
+            <label className={styles.selectLabel} htmlFor="ce-owner">
+              Atendente responsável (opcional)
+            </label>
+            <select
+              id="ce-owner"
+              className={styles.select}
+              value={form.ownerUserId}
+              onChange={update('ownerUserId')}
+              disabled={submitting}
+            >
+              <option value="">Nenhum</option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.name}
                 </option>
               ))}
             </select>
@@ -248,6 +316,12 @@ export function CalendarEventDrawer({ open, mode, event, onClose, onCreate, onUp
           </div>
         </form>
       </aside>
+
+      <QuickLeadDrawer
+        open={quickLeadOpen}
+        onClose={() => setQuickLeadOpen(false)}
+        onCreated={handleQuickLeadCreated}
+      />
     </div>
   );
 }

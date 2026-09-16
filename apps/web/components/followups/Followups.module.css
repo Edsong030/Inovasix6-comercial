@@ -118,6 +118,15 @@
   font-size: 12.5px;
 }
 
+.drawerNotice {
+  padding: 9px 12px;
+  border-radius: var(--r-md);
+  background: var(--success-soft);
+  border: 1px solid rgba(52, 211, 153, 0.32);
+  color: #9fe3c4;
+  font-size: 12.5px;
+}
+
 .fieldGroup {
   display: flex;
   flex-direction: column;

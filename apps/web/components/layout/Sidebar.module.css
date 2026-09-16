@@ -277,6 +277,19 @@
   color: var(--text-muted);
 }
 
+/*
+ * "Inovasix6 Comercial IA" grouped as a single flex item of .promoBrand
+ * (inline-flex, gap: 6px). Left ungrouped, the bare text runs around the "6"
+ * span become separate flex items, and the container's gap inserts unwanted
+ * space between "Inovasix" and "6" — visually splitting the wordmark.
+ * nowrap is a second, width-independent guarantee; the promo card is hidden
+ * below the tablet breakpoint (see @media block below), so there is no
+ * narrow-width scenario where this text needs to wrap.
+ */
+.promoBrandName {
+  white-space: nowrap;
+}
+
 .tenantCard {
   display: flex;
   align-items: center;

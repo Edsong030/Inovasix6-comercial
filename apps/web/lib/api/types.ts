@@ -78,6 +78,22 @@ export interface CreateLeadInput {
   interest?: string;
 }
 
+// -- Users (internal tenant users, eligible as "Atendente responsável") -------
+
+export type UserStatus = 'ACTIVE' | 'INVITED' | 'SUSPENDED';
+
+/**
+ * Internal tenant user eligible to be assigned as the "Atendente responsável".
+ * This is NEVER a Lead/Cliente — it is an internal user of the same tenant.
+ */
+export interface AssignableUser {
+  id: string;
+  name: string;
+  email: string;
+  status: UserStatus;
+  roleCodes: string[];
+}
+
 // -- Follow-ups ---------------------------------------------------------------
 
 export type FollowUpStatus = 'PENDING' | 'COMPLETED' | 'CANCELED';

@@ -1,5 +1,6 @@
 import { apiFetch } from '@/lib/auth/api';
 import type {
+  AssignableUser,
   CalendarEventItem,
   CalendarEventListResult,
   CalendarEventStatus,
@@ -75,6 +76,17 @@ export function moveLeadStage(id: string, stageId: string): Promise<LeadItem> {
     method: 'PATCH',
     body: JSON.stringify({ stageId }),
   });
+}
+
+// -- Users (Atendente responsável) --------------------------------------------
+
+/**
+ * Lists internal tenant users eligible as "Atendente responsável".
+ * Tenant-scoped server-side (the token carries the tenant); never returns
+ * users of another tenant and never returns Leads.
+ */
+export function listAssignableUsers(signal?: AbortSignal): Promise<AssignableUser[]> {
+  return apiFetch<AssignableUser[]>('/api/users/assignable', { method: 'GET' }, { signal });
 }
 
 // -- Follow-ups ---------------------------------------------------------------

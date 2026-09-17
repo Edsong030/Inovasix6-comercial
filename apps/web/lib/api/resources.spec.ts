@@ -1,7 +1,18 @@
 jest.mock('@/lib/auth/api', () => ({ apiFetch: jest.fn() }));
 
 import { apiFetch } from '@/lib/auth/api';
-import { createCalendarEvent, createFollowUp, listFollowUps, rescheduleFollowUp } from './resources';
+import {
+  assignConversation,
+  changeConversationState,
+  createCalendarEvent,
+  createFollowUp,
+  listConversations,
+  listFollowUps,
+  listMessages,
+  rescheduleFollowUp,
+  sendMessage,
+  unassignConversation,
+} from './resources';
 
 const mockedApiFetch = apiFetch as jest.Mock;
 
@@ -59,5 +70,65 @@ describe('calendar event create request shape', () => {
     expect(path).toBe('/api/calendar/events');
     expect(options.method).toBe('POST');
     expect(JSON.parse(options.body)).toEqual({ title: 'Reunião', startsAt: '2026-09-10T10:00:00.000Z' });
+  });
+});
+
+describe('Conversations/Messages request shape (STEP 3 — real Inbox API)', () => {
+  beforeEach(() => mockedApiFetch.mockReset());
+
+  it('listConversations encodes search/state/pageSize as query params', async () => {
+    mockedApiFetch.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 50 });
+    await listConversations({ search: 'maria', state: 'AGUARDANDO_HUMANO', pageSize: 50 });
+
+    const [path] = mockedApiFetch.mock.calls[0];
+    expect(path).toContain('/api/conversations?');
+    expect(path).toContain('search=maria');
+    expect(path).toContain('state=AGUARDANDO_HUMANO');
+    expect(path).toContain('pageSize=50');
+  });
+
+  it('listMessages GETs /api/conversations/:id/messages with the cursor/limit params', async () => {
+    mockedApiFetch.mockResolvedValue({ items: [], nextCursor: null, hasMore: false });
+    await listMessages('conv-1', { before: 'msg-9', limit: 20 });
+
+    const [path] = mockedApiFetch.mock.calls[0];
+    expect(path).toBe('/api/conversations/conv-1/messages?before=msg-9&limit=20');
+  });
+
+  it('sendMessage POSTs only { body } — never a client-chosen sender/direction/tenantId', async () => {
+    mockedApiFetch.mockResolvedValue({ id: 'msg-1' });
+    await sendMessage('conv-1', 'Olá!');
+
+    expect(mockedApiFetch).toHaveBeenCalledWith('/api/conversations/conv-1/messages', {
+      method: 'POST',
+      body: JSON.stringify({ body: 'Olá!' }),
+    });
+  });
+
+  it('assignConversation PATCHes /assign with { userId }', async () => {
+    mockedApiFetch.mockResolvedValue({ id: 'conv-1' });
+    await assignConversation('conv-1', 'user-9');
+
+    expect(mockedApiFetch).toHaveBeenCalledWith('/api/conversations/conv-1/assign', {
+      method: 'PATCH',
+      body: JSON.stringify({ userId: 'user-9' }),
+    });
+  });
+
+  it('unassignConversation PATCHes /unassign with no body', async () => {
+    mockedApiFetch.mockResolvedValue({ id: 'conv-1' });
+    await unassignConversation('conv-1');
+
+    expect(mockedApiFetch).toHaveBeenCalledWith('/api/conversations/conv-1/unassign', { method: 'PATCH' });
+  });
+
+  it('changeConversationState PATCHes /state with { state }', async () => {
+    mockedApiFetch.mockResolvedValue({ id: 'conv-1' });
+    await changeConversationState('conv-1', 'ENCERRADA');
+
+    expect(mockedApiFetch).toHaveBeenCalledWith('/api/conversations/conv-1/state', {
+      method: 'PATCH',
+      body: JSON.stringify({ state: 'ENCERRADA' }),
+    });
   });
 });

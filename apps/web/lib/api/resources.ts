@@ -1,8 +1,13 @@
 import { apiFetch } from '@/lib/auth/api';
 import type {
+  AssignableUser,
   CalendarEventItem,
   CalendarEventListResult,
   CalendarEventStatus,
+  ConversationChannel,
+  ConversationItem,
+  ConversationListResult,
+  ConversationState,
   CreateCalendarEventInput,
   CreateFollowUpInput,
   CreateLeadInput,
@@ -12,6 +17,8 @@ import type {
   FollowUpStatus,
   LeadItem,
   LeadListResult,
+  MessageItem,
+  MessageListResult,
   PipelineView,
   UpdateCalendarEventInput,
   UpdateFollowUpInput,
@@ -75,6 +82,17 @@ export function moveLeadStage(id: string, stageId: string): Promise<LeadItem> {
     method: 'PATCH',
     body: JSON.stringify({ stageId }),
   });
+}
+
+// -- Users (Atendente responsável) --------------------------------------------
+
+/**
+ * Lists internal tenant users eligible as "Atendente responsável".
+ * Tenant-scoped server-side (the token carries the tenant); never returns
+ * users of another tenant and never returns Leads.
+ */
+export function listAssignableUsers(signal?: AbortSignal): Promise<AssignableUser[]> {
+  return apiFetch<AssignableUser[]>('/api/users/assignable', { method: 'GET' }, { signal });
 }
 
 // -- Follow-ups ---------------------------------------------------------------
@@ -193,4 +211,86 @@ export function completeCalendarEvent(id: string): Promise<CalendarEventItem> {
 
 export function cancelCalendarEvent(id: string): Promise<CalendarEventItem> {
   return apiFetch<CalendarEventItem>(`/api/calendar/events/${id}/cancel`, { method: 'PATCH' });
+}
+
+// -- Conversations / Inbox ------------------------------------------------------
+
+export interface ListConversationsParams {
+  state?: ConversationState;
+  channel?: ConversationChannel;
+  assignedUserId?: string;
+  unassigned?: boolean;
+  search?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+export function listConversations(
+  params: ListConversationsParams = {},
+  signal?: AbortSignal,
+): Promise<ConversationListResult> {
+  const query = toQuery({
+    state: params.state,
+    channel: params.channel,
+    assignedUserId: params.assignedUserId,
+    unassigned: params.unassigned === undefined ? undefined : String(params.unassigned),
+    search: params.search,
+    page: params.page,
+    pageSize: params.pageSize,
+  });
+  return apiFetch<ConversationListResult>(`/api/conversations${query}`, { method: 'GET' }, { signal });
+}
+
+export function getConversation(id: string, signal?: AbortSignal): Promise<ConversationItem> {
+  return apiFetch<ConversationItem>(`/api/conversations/${id}`, { method: 'GET' }, { signal });
+}
+
+/** Validated transition — the API rejects (409) any state not reachable from the current one. */
+export function changeConversationState(id: string, state: ConversationState): Promise<ConversationItem> {
+  return apiFetch<ConversationItem>(`/api/conversations/${id}/state`, {
+    method: 'PATCH',
+    body: JSON.stringify({ state }),
+  });
+}
+
+/** Assigns/transfers to a user of the SAME tenant (server-enforced). */
+export function assignConversation(id: string, userId: string): Promise<ConversationItem> {
+  return apiFetch<ConversationItem>(`/api/conversations/${id}/assign`, {
+    method: 'PATCH',
+    body: JSON.stringify({ userId }),
+  });
+}
+
+/** Idempotent if already unassigned. */
+export function unassignConversation(id: string): Promise<ConversationItem> {
+  return apiFetch<ConversationItem>(`/api/conversations/${id}/unassign`, { method: 'PATCH' });
+}
+
+// -- Messages -------------------------------------------------------------------
+
+export interface ListMessagesParams {
+  /** Load messages older than this message id (keyset pagination). */
+  before?: string;
+  limit?: number;
+}
+
+export function listMessages(
+  conversationId: string,
+  params: ListMessagesParams = {},
+  signal?: AbortSignal,
+): Promise<MessageListResult> {
+  const query = toQuery({ before: params.before, limit: params.limit });
+  return apiFetch<MessageListResult>(
+    `/api/conversations/${conversationId}/messages${query}`,
+    { method: 'GET' },
+    { signal },
+  );
+}
+
+/** Always OUTBOUND/AGENT, attributed to the caller — the API never accepts a client-chosen sender. */
+export function sendMessage(conversationId: string, body: string): Promise<MessageItem> {
+  return apiFetch<MessageItem>(`/api/conversations/${conversationId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ body }),
+  });
 }

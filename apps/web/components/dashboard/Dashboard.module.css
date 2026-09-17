@@ -395,6 +395,17 @@
   box-shadow: 0 6px 16px -8px rgba(0, 135, 255, 0.9);
 }
 
+/*
+ * "Inovasix" and "6" grouped as a single flex item of .aiBrand (inline-flex,
+ * gap: 8px). Left ungrouped, "Inovasix" (a bare text node) and the "6" span
+ * become TWO separate flex items, and the container's gap inserts unwanted
+ * space between them — visually splitting the wordmark even though it never
+ * wraps to a new line. nowrap is a second, width-independent guarantee.
+ */
+.aiBrandName {
+  white-space: nowrap;
+}
+
 .aiSix {
   background: var(--brand-gradient);
   -webkit-background-clip: text;

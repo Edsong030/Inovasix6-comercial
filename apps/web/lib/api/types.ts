@@ -78,6 +78,22 @@ export interface CreateLeadInput {
   interest?: string;
 }
 
+// -- Users (internal tenant users, eligible as "Atendente responsável") -------
+
+export type UserStatus = 'ACTIVE' | 'INVITED' | 'SUSPENDED';
+
+/**
+ * Internal tenant user eligible to be assigned as the "Atendente responsável".
+ * This is NEVER a Lead/Cliente — it is an internal user of the same tenant.
+ */
+export interface AssignableUser {
+  id: string;
+  name: string;
+  email: string;
+  status: UserStatus;
+  roleCodes: string[];
+}
+
 // -- Follow-ups ---------------------------------------------------------------
 
 export type FollowUpStatus = 'PENDING' | 'COMPLETED' | 'CANCELED';
@@ -177,4 +193,70 @@ export interface UpdateCalendarEventInput {
   type?: CalendarEventType;
   startsAt?: string;
   endsAt?: string;
+}
+
+// -- Conversations / Inbox -----------------------------------------------------
+
+/**
+ * Mirrors Prisma's ConversationState exactly (apps/api/prisma/schema.prisma).
+ * HUMANO_ATENDENDO is only ever reached as a side effect of assigning the
+ * conversation — never a direct PATCH .../state target (see
+ * CONVERSATION_STATE_TRANSITIONS in InboxView.tsx, which mirrors the
+ * backend's ALLOWED_TRANSITIONS).
+ */
+export type ConversationState = 'AI_ATENDENDO' | 'AGUARDANDO_HUMANO' | 'HUMANO_ATENDENDO' | 'ENCERRADA';
+
+/** Mirrors Prisma's ConversationChannel. Only MANUAL is reachable today — no provider integration exists yet. */
+export type ConversationChannel = 'MANUAL' | 'WHATSAPP' | 'INSTAGRAM' | 'FACEBOOK' | 'WEBCHAT';
+
+export interface ConversationItem {
+  id: string;
+  contactId: string;
+  contactName: string | null;
+  contactPhone: string | null;
+  contactEmail: string | null;
+  /** Only presence is known here — the API does not join Lead, so no name/company is available. */
+  leadId: string | null;
+  state: ConversationState;
+  channel: ConversationChannel;
+  subject: string | null;
+  assignedUserId: string | null;
+  assignedUserName: string | null;
+  lastMessageAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ConversationListResult {
+  items: ConversationItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+// -- Messages -------------------------------------------------------------------
+
+export type MessageDirection = 'INBOUND' | 'OUTBOUND';
+export type MessageStatus = 'PENDING' | 'SENT' | 'DELIVERED' | 'READ' | 'FAILED';
+export type MessageSenderType = 'CUSTOMER' | 'AGENT' | 'SYSTEM' | 'AI';
+
+export interface MessageItem {
+  id: string;
+  conversationId: string;
+  direction: MessageDirection;
+  status: MessageStatus;
+  senderType: MessageSenderType;
+  senderUserId: string | null;
+  senderUserName: string | null;
+  body: string | null;
+  externalId: string | null;
+  createdAt: string;
+}
+
+export interface MessageListResult {
+  /** Chronological order (oldest first), as returned by the API. */
+  items: MessageItem[];
+  /** Pass as `before` to load the next (older) page. Null when there is none. */
+  nextCursor: string | null;
+  hasMore: boolean;
 }

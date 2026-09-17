@@ -37,6 +37,17 @@ enum ConversationState {
   ENCERRADA
 }
 
+// Channel the conversation is happening on. Only MANUAL is actually usable
+// today (no provider integration yet) — the others exist so the domain does
+// not need a schema change when a real integration is added.
+enum ConversationChannel {
+  MANUAL
+  WHATSAPP
+  INSTAGRAM
+  FACEBOOK
+  WEBCHAT
+}
+
 enum MessageDirection {
   INBOUND
   OUTBOUND
@@ -48,6 +59,15 @@ enum MessageStatus {
   DELIVERED
   READ
   FAILED
+}
+
+// Who/what authored the message. AI exists structurally for the future
+// assistant hand-off; nothing writes it yet.
+enum MessageSenderType {
+  CUSTOMER
+  AGENT
+  SYSTEM
+  AI
 }
 
 enum FollowUpType {
@@ -133,14 +153,16 @@ model User {
   createdAt    DateTime   @default(now()) @map("created_at")
   updatedAt    DateTime   @updatedAt @map("updated_at")
 
-  tenant              Tenant          @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  userRoles           UserRole[]
-  authSessions        AuthSession[]
-  ownedLeads          Lead[]          @relation("LeadOwner")
-  ownedFollowUps      FollowUp[]      @relation("FollowUpOwner")
-  ownedCalendarEvents CalendarEvent[] @relation("CalendarEventOwner")
+  tenant                Tenant          @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  userRoles             UserRole[]
+  authSessions          AuthSession[]
+  ownedLeads            Lead[]          @relation("LeadOwner")
+  ownedFollowUps        FollowUp[]      @relation("FollowUpOwner")
+  ownedCalendarEvents   CalendarEvent[] @relation("CalendarEventOwner")
+  assignedConversations Conversation[]  @relation("ConversationAssignee")
+  sentMessages          Message[]       @relation("MessageSender")
 
-  // Enables composite FKs [tenantId, id] from children (AuthSession, UserRole, Lead.owner, FollowUp.owner, CalendarEvent.owner).
+  // Enables composite FKs [tenantId, id] from children (AuthSession, UserRole, Lead.owner, FollowUp.owner, CalendarEvent.owner, Conversation.assignedUser, Message.senderUser).
   @@unique([tenantId, id])
   @@unique([tenantId, email])
   @@index([tenantId, status])
@@ -359,43 +381,62 @@ model CalendarEvent {
 // ---------------------------------------------------------------------------
 
 model Conversation {
-  id        String            @id @default(uuid()) @db.Uuid
-  tenantId  String            @map("tenant_id") @db.Uuid
-  contactId String            @map("contact_id") @db.Uuid
-  leadId    String?           @map("lead_id") @db.Uuid
-  state     ConversationState @default(AI_ATENDENDO)
-  createdAt DateTime          @default(now()) @map("created_at")
-  updatedAt DateTime          @updatedAt @map("updated_at")
+  id             String              @id @default(uuid()) @db.Uuid
+  tenantId       String              @map("tenant_id") @db.Uuid
+  contactId      String              @map("contact_id") @db.Uuid
+  leadId         String?             @map("lead_id") @db.Uuid
+  state          ConversationState   @default(AI_ATENDENDO)
+  channel        ConversationChannel @default(MANUAL)
+  assignedUserId String?             @map("assigned_user_id") @db.Uuid
+  subject        String?
+  // Denormalized from the latest Message so the conversation list can sort
+  // without aggregating the messages table on every request. Kept in sync by
+  // the application whenever a Message is created.
+  lastMessageAt  DateTime?           @map("last_message_at")
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
 
-  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  contact  Contact   @relation(fields: [tenantId, contactId], references: [tenantId, id], onDelete: Restrict)
+  tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  contact      Contact   @relation(fields: [tenantId, contactId], references: [tenantId, id], onDelete: Restrict)
   // Optional link to a Lead, kept within the same tenant via composite FK.
   // NoAction (not SetNull) for the same reason as Lead.owner: tenantId in the
   // composite FK is non-nullable. The application clears leadId within tenant
   // scope before deleting a Lead.
-  lead     Lead?     @relation(fields: [tenantId, leadId], references: [tenantId, id], onDelete: NoAction)
-  messages Message[]
+  lead         Lead?     @relation(fields: [tenantId, leadId], references: [tenantId, id], onDelete: NoAction)
+  // Nullable owner, same NoAction reasoning as Lead.owner (composite FK carries
+  // the non-nullable tenantId, so it cannot be SetNull).
+  assignedUser User?     @relation("ConversationAssignee", fields: [tenantId, assignedUserId], references: [tenantId, id], onDelete: NoAction)
+  messages     Message[]
 
   @@unique([tenantId, id])
   @@index([tenantId, state, updatedAt])
+  @@index([tenantId, state, lastMessageAt])
+  @@index([tenantId, assignedUserId, state])
+  @@index([tenantId, channel])
   @@index([tenantId, contactId])
   @@index([tenantId, leadId])
   @@map("conversations")
 }
 
 model Message {
-  id             String           @id @default(uuid()) @db.Uuid
-  tenantId       String           @map("tenant_id") @db.Uuid
-  conversationId String           @map("conversation_id") @db.Uuid
+  id             String            @id @default(uuid()) @db.Uuid
+  tenantId       String            @map("tenant_id") @db.Uuid
+  conversationId String            @map("conversation_id") @db.Uuid
   direction      MessageDirection
-  status         MessageStatus    @default(PENDING)
-  externalId     String?          @map("external_id")
+  status         MessageStatus     @default(PENDING)
+  senderType     MessageSenderType @default(CUSTOMER) @map("sender_type")
+  senderUserId   String?           @map("sender_user_id") @db.Uuid
+  externalId     String?           @map("external_id")
   body           String?
-  createdAt      DateTime         @default(now()) @map("created_at")
+  createdAt      DateTime          @default(now()) @map("created_at")
 
   tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   // Composite FK: a message cannot attach to a conversation of another tenant.
   conversation Conversation @relation(fields: [tenantId, conversationId], references: [tenantId, id], onDelete: Restrict)
+  // Set only for senderType AGENT/SYSTEM authored by a real user. Nullable
+  // owner, same NoAction reasoning as Lead.owner (composite FK carries the
+  // non-nullable tenantId, so it cannot be SetNull).
+  senderUser   User?        @relation("MessageSender", fields: [tenantId, senderUserId], references: [tenantId, id], onDelete: NoAction)
 
   // Idempotency for provider-delivered messages (e.g. WhatsApp) per tenant.
   @@unique([tenantId, externalId])

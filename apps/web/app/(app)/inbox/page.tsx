@@ -9,7 +9,7 @@ export default function InboxPage() {
     <>
       <PageHeader
         title="Inbox"
-        subtitle="Todas as conversas do WhatsApp, com IA e time humano no mesmo fluxo."
+        subtitle="Converse com clientes e acompanhe o atendimento da sua equipe."
       />
       <InboxView />
     </>

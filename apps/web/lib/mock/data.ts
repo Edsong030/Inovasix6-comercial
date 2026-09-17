@@ -1,10 +1,12 @@
 /**
  * MOCK DATA — placeholder content for the visual homologation build.
  *
- * Everything in this file is hard-coded. Only authentication talks to the real
- * API today; dashboard, inbox, CRM, leads, agenda, knowledge, follow-ups and
- * team have no backend yet. Each screen imports from here so the swap to real
- * endpoints is a single, obvious change per view.
+ * Everything in this file is hard-coded. Only Knowledge (Base de IA) and Team
+ * still read from here — every other screen that used to (dashboard, CRM,
+ * leads, agenda, follow-ups and now the Inbox/conversations) has since moved
+ * to the real API. The unused dashboard/CRM/leads exports below were left in
+ * place rather than removed as dead code in this change, since that cleanup
+ * is unrelated to the Inbox work this file was touched for.
  */
 
 import type { BadgeTone } from '@/components/ui/Badge';
@@ -149,143 +151,6 @@ export const RECENT_ACTIVITY: ActivityEntry[] = [
     type: 'negociacao',
   },
 ];
-
-// -- Inbox -------------------------------------------------------------------
-
-export type ConversationStatus = 'ia' | 'humano' | 'aguardando';
-
-export interface Conversation {
-  id: string;
-  name: string;
-  channel: string;
-  preview: string;
-  time: string;
-  unread: number;
-  status: ConversationStatus;
-  initials: string;
-}
-
-export const CONVERSATIONS: Conversation[] = [
-  {
-    id: 'c1',
-    name: 'Maria Silva',
-    channel: 'WhatsApp',
-    preview: 'Gostaria de saber mais sobre o serviço.',
-    time: '09:41',
-    unread: 2,
-    status: 'ia',
-    initials: 'MS',
-  },
-  {
-    id: 'c2',
-    name: 'Carlos Mendes',
-    channel: 'WhatsApp',
-    preview: 'Recebi o orçamento, vou avaliar com o time.',
-    time: '09:12',
-    unread: 0,
-    status: 'humano',
-    initials: 'CM',
-  },
-  {
-    id: 'c3',
-    name: 'Ana Costa',
-    channel: 'WhatsApp',
-    preview: 'Podemos remarcar a apresentação?',
-    time: 'Ontem',
-    unread: 1,
-    status: 'aguardando',
-    initials: 'AC',
-  },
-  {
-    id: 'c4',
-    name: 'João Oliveira',
-    channel: 'WhatsApp',
-    preview: 'Qual a diferença entre os planos?',
-    time: 'Ontem',
-    unread: 0,
-    status: 'ia',
-    initials: 'JO',
-  },
-  {
-    id: 'c5',
-    name: 'Mariana Souza',
-    channel: 'WhatsApp',
-    preview: 'Obrigada! Aguardo o retorno.',
-    time: 'Seg',
-    unread: 0,
-    status: 'aguardando',
-    initials: 'MS',
-  },
-];
-
-export type MessageAuthor = 'cliente' | 'ia' | 'atendente';
-
-export interface Message {
-  id: string;
-  author: MessageAuthor;
-  text: string;
-  time: string;
-}
-
-export const CONVERSATION_THREAD: Message[] = [
-  {
-    id: 'm1',
-    author: 'cliente',
-    text: 'Olá! Gostaria de saber mais sobre o serviço.',
-    time: '09:32',
-  },
-  {
-    id: 'm2',
-    author: 'ia',
-    text: 'Olá, Maria! Sou a assistente da Inovasix. Atendemos empresas que querem automatizar o atendimento comercial no WhatsApp. Posso te fazer duas perguntas rápidas para entender melhor a sua necessidade?',
-    time: '09:32',
-  },
-  { id: 'm3', author: 'cliente', text: 'Claro, pode perguntar.', time: '09:35' },
-  {
-    id: 'm4',
-    author: 'ia',
-    text: 'Perfeito. Hoje quantos atendimentos vocês recebem por dia, em média? E o time atual é de quantas pessoas?',
-    time: '09:35',
-  },
-  {
-    id: 'm5',
-    author: 'cliente',
-    text: 'Recebemos uns 60 por dia e temos 3 pessoas no comercial.',
-    time: '09:39',
-  },
-  {
-    id: 'm6',
-    author: 'atendente',
-    text: 'Oi, Maria! Aqui é o Edson. Com esse volume conseguimos montar um fluxo bem interessante — posso te mostrar em uma call de 20 minutos?',
-    time: '09:41',
-  },
-];
-
-export interface LeadSummary {
-  name: string;
-  phone: string;
-  email: string;
-  origin: string;
-  interest: string;
-  stage: string;
-  owner: string;
-  score: string;
-  createdAt: string;
-  tags: string[];
-}
-
-export const ACTIVE_LEAD: LeadSummary = {
-  name: 'Maria Silva',
-  phone: '+55 11 98432-1190',
-  email: 'maria.silva@empresa.com.br',
-  origin: 'WhatsApp',
-  interest: 'Automação de atendimento',
-  stage: 'Em Atendimento',
-  owner: 'Edson',
-  score: 'Alto',
-  createdAt: 'Hoje, 09:32',
-  tags: ['60 atendimentos/dia', 'Time de 3', 'Decisora'],
-};
 
 // -- CRM ---------------------------------------------------------------------
 

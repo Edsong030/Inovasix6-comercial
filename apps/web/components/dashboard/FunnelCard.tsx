@@ -1,6 +1,6 @@
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardBody, CardHeader } from '@/components/ui/Card';
-import type { FunnelConversionVM, FunnelStageVM } from './view-models';
+import { formatPercent, type FunnelConversionVM, type FunnelStageVM } from './view-models';
 import styles from './Dashboard.module.css';
 
 /** Circular conversion gauge, drawn with SVG (no chart library). */
@@ -12,7 +12,7 @@ function ConversionGauge({ conversion }: { conversion: FunnelConversionVM }) {
 
   return (
     <div className={styles.gauge}>
-      <svg viewBox="0 0 120 120" className={styles.gaugeSvg} role="img" aria-label={`Taxa de conversão: ${rate}%`}>
+      <svg viewBox="0 0 120 120" className={styles.gaugeSvg} role="img" aria-label={`Taxa de conversão: ${formatPercent(rate)}`}>
         <defs>
           <linearGradient id="funnelGauge" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#0087ff" />
@@ -31,7 +31,7 @@ function ConversionGauge({ conversion }: { conversion: FunnelConversionVM }) {
           transform="rotate(-90 60 60)"
         />
         <text x="60" y="66" className={styles.gaugeValue} textAnchor="middle">
-          {rate}%
+          {formatPercent(rate)}
         </text>
       </svg>
       <p className={styles.gaugeCaption}>Taxa de conversão</p>
@@ -65,7 +65,7 @@ export function FunnelCard({
                 <div
                   className={styles.stageTrack}
                   role="meter"
-                  aria-label={`${stage.label}: ${stage.count} leads (${stage.percent}%)`}
+                  aria-label={`${stage.label}: ${stage.count} leads (${formatPercent(stage.percent)})`}
                   aria-valuenow={stage.count}
                   aria-valuemin={0}
                   aria-valuemax={stages[0]?.count ?? stage.count}
@@ -73,7 +73,7 @@ export function FunnelCard({
                   <div className={styles.stageFill} style={{ width: `${stage.percent}%` }} />
                 </div>
                 <span className={styles.stageCount}>{stage.count}</span>
-                <span className={styles.stagePercent}>{stage.percent}%</span>
+                <span className={styles.stagePercent}>{formatPercent(stage.percent)}</span>
               </div>
             ))}
           </div>

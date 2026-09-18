@@ -12,11 +12,12 @@ import { FollowupsCard } from '@/components/dashboard/FollowupsCard';
 import { FunnelCard } from '@/components/dashboard/FunnelCard';
 import { MetricsGrid } from '@/components/dashboard/MetricsGrid';
 import styles from '@/components/dashboard/Dashboard.module.css';
-import type {
-  ActivityVM,
-  FollowupVM,
-  FunnelStageVM,
-  MetricVM,
+import {
+  formatPercent,
+  type ActivityVM,
+  type FollowupVM,
+  type FunnelStageVM,
+  type MetricVM,
 } from '@/components/dashboard/view-models';
 import { greetingForHour } from '@/lib/auth/identity';
 import { useAuth } from '@/lib/auth/auth-context';
@@ -51,7 +52,7 @@ function toMetrics(s: DashboardSummary): MetricVM[] {
     id: meta.id,
     label: meta.label,
     value: meta.money ? brl(raw[meta.id]) : String(raw[meta.id]),
-    delta: `${m.conversionRate}% conversão`,
+    delta: `${formatPercent(m.conversionRate)} conversão`,
     trend: 'up',
     hint: '',
     accent: meta.accent,

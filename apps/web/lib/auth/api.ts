@@ -1,3 +1,4 @@
+import { DEMO_MODE, demoRequest } from '../demo/api';
 import { clearAccessToken, getAccessToken, setAccessToken } from './token-store';
 import { AuthError, type MeResponse, type TokenResponse } from './types';
 
@@ -42,6 +43,7 @@ async function rawRequest(
   init: RequestInit,
   token: string | null,
 ): Promise<Response> {
+  if (DEMO_MODE) return demoRequest(path, init);
   const headers = new Headers(init.headers);
   if (init.body !== undefined && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');

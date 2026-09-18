@@ -51,3 +51,54 @@ describe('apiFetch error message surfacing', () => {
     );
   });
 });
+
+/**
+ * DEMO_MODE gating (Inbox-on-GitHub-Pages work): `DEMO_MODE` is read once at
+ * module load from NEXT_PUBLIC_DEMO_MODE, so each case here needs a FRESH
+ * module instance (jest.resetModules + require) loaded under its own env var
+ * value — a static import can't be re-evaluated with a different env.
+ */
+describe('DEMO_MODE gating — rawRequest routes to the demo layer only when NEXT_PUBLIC_DEMO_MODE=true', () => {
+  const originalEnv = process.env.NEXT_PUBLIC_DEMO_MODE;
+
+  afterEach(() => {
+    if (originalEnv === undefined) delete process.env.NEXT_PUBLIC_DEMO_MODE;
+    else process.env.NEXT_PUBLIC_DEMO_MODE = originalEnv;
+    jest.resetModules();
+  });
+
+  it('DEMO_MODE=false (default): the real API path is unchanged — apiFetch reaches the network via fetch', async () => {
+    delete process.env.NEXT_PUBLIC_DEMO_MODE;
+    jest.resetModules();
+    const fetchMock = jest.fn().mockResolvedValue({ ok: true, status: 200, text: async () => JSON.stringify({ items: [] }) });
+    (global as unknown as { fetch: jest.Mock }).fetch = fetchMock;
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require('./api') as typeof import('./api');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const demo = require('../demo/api') as typeof import('../demo/api');
+    expect(demo.DEMO_MODE).toBe(false);
+    await mod.apiFetch('/api/conversations', { method: 'GET' }, { retryOnUnauthorized: false });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('DEMO_MODE=true: Inbox calls (conversations, messages, assignable users) never reach the network', async () => {
+    process.env.NEXT_PUBLIC_DEMO_MODE = 'true';
+    jest.resetModules();
+    const fetchMock = jest.fn();
+    (global as unknown as { fetch: jest.Mock }).fetch = fetchMock;
+
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require('./api') as typeof import('./api');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const demo = require('../demo/api') as typeof import('../demo/api');
+    expect(demo.DEMO_MODE).toBe(true);
+
+    await mod.apiFetch('/api/conversations', { method: 'GET' }, { retryOnUnauthorized: false });
+    await mod.apiFetch('/api/conversations/demo-conv-1/messages', { method: 'GET' }, { retryOnUnauthorized: false });
+    await mod.apiFetch('/api/users/assignable', { method: 'GET' }, { retryOnUnauthorized: false });
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});

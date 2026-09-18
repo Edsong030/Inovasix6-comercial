@@ -59,3 +59,9 @@ export interface FunnelConversionVM {
   deltaLabel: string;
   opportunities: string;
 }
+
+/** Renders a percentage with at most one decimal place, e.g. 14.285714 -> "14.3%", 20 -> "20%". */
+export function formatPercent(value: number): string {
+  const rounded = Math.round(value * 10) / 10;
+  return `${Number.isInteger(rounded) ? rounded : rounded.toFixed(1)}%`;
+}

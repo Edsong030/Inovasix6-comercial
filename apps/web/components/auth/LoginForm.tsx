@@ -92,10 +92,13 @@ export function LoginForm() {
         <div className={styles.card}>
           <div className={styles.brand}>
             <span className={styles.mark} aria-hidden="true">
-              <IconLogo size={20} />
+              <IconLogo width={38} height={48} />
             </span>
-            <span className={styles.brandName}>
-              Inovasix<span className={styles.brandSix}>6</span> Comercial IA
+            <span className={styles.brandText}>
+              <span className={styles.brandName}>
+                Inovasix<span className={styles.brandSix}>6</span>
+              </span>
+              <span className={styles.brandSuffix}>Comercial IA</span>
             </span>
           </div>
 

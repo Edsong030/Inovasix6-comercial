@@ -16,7 +16,7 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
   height: var(--topbar-h);
   padding: 0 16px;
   border-bottom: 1px solid var(--border);
@@ -43,15 +43,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 9px;
-  background: var(--brand-gradient);
-  color: #fff;
-  font-weight: 700;
-  font-size: 13px;
   flex-shrink: 0;
-  box-shadow: 0 6px 18px -6px rgba(0, 135, 255, 0.75);
 }
 
 .brandText {
@@ -271,23 +263,43 @@
 .promoBrand {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 10.5px;
-  font-weight: 700;
-  color: var(--text-muted);
+  gap: 5px;
+}
+
+.promoMark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.promoBrandText {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
 }
 
 /*
- * "Inovasix6 Comercial IA" grouped as a single flex item of .promoBrand
- * (inline-flex, gap: 6px). Left ungrouped, the bare text runs around the "6"
- * span become separate flex items, and the container's gap inserts unwanted
- * space between "Inovasix" and "6" — visually splitting the wordmark.
- * nowrap is a second, width-independent guarantee; the promo card is hidden
- * below the tablet breakpoint (see @media block below), so there is no
- * narrow-width scenario where this text needs to wrap.
+ * "Inovasix" and "6" grouped as a single flex item of .promoBrandText (flex
+ * column). Left ungrouped, the bare text run and the "6" span become
+ * separate flex items and can end up on different lines — visually
+ * splitting the wordmark. nowrap is a second, width-independent guarantee;
+ * the promo card is hidden below the tablet breakpoint (see @media block
+ * below), so there is no narrow-width scenario where this text needs to wrap.
  */
 .promoBrandName {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-muted);
   white-space: nowrap;
+}
+
+.promoBrandSuffix {
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--text-faint);
 }
 
 .tenantCard {

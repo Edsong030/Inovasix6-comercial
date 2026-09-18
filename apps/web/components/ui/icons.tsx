@@ -278,7 +278,7 @@ export const IconLogo = ({
   height,
 }: IconProps & { width?: number; height?: number }) => (
   <Image
-    src="/inovasix6-icon.png"
+    src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ''}/inovasix6-icon.png`}
     alt=""
     width={width ?? size}
     height={height ?? size}

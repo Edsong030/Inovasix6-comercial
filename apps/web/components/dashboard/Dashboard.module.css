@@ -376,33 +376,33 @@
 .aiBrand {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 800;
-  letter-spacing: -0.01em;
-  color: var(--text);
+  gap: 6px;
 }
 
 .aiMark {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: var(--r-sm);
-  background: var(--brand-gradient);
-  color: #fff;
-  box-shadow: 0 6px 16px -8px rgba(0, 135, 255, 0.9);
+  flex-shrink: 0;
+}
+
+.aiBrandText {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
 }
 
 /*
- * "Inovasix" and "6" grouped as a single flex item of .aiBrand (inline-flex,
- * gap: 8px). Left ungrouped, "Inovasix" (a bare text node) and the "6" span
- * become TWO separate flex items, and the container's gap inserts unwanted
- * space between them — visually splitting the wordmark even though it never
- * wraps to a new line. nowrap is a second, width-independent guarantee.
+ * "Inovasix" and "6" grouped as a single flex item of .aiBrandText (flex
+ * column). Left ungrouped, "Inovasix" (a bare text node) and the "6" span
+ * become TWO separate flex items and stack on their own lines instead of
+ * reading as one wordmark. nowrap is a second, width-independent guarantee.
  */
 .aiBrandName {
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text);
   white-space: nowrap;
 }
 
@@ -411,6 +411,14 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+.aiBrandSuffix {
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--text-faint);
 }
 
 .aiBadge {

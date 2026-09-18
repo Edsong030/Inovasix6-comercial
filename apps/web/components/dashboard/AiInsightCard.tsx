@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/Button';
-import { IconSparkles } from '@/components/ui/icons';
+import { IconLogo } from '@/components/ui/icons';
 import styles from './Dashboard.module.css';
 
 /**
@@ -12,10 +12,13 @@ export function AiInsightCard() {
       <div className={styles.aiTop}>
         <span className={styles.aiBrand}>
           <span className={styles.aiMark} aria-hidden="true">
-            <IconSparkles size={16} />
+            <IconLogo width={25} height={32} />
           </span>
-          <span className={styles.aiBrandName}>
-            Inovasix<span className={styles.aiSix}>6</span>
+          <span className={styles.aiBrandText}>
+            <span className={styles.aiBrandName}>
+              Inovasix<span className={styles.aiSix}>6</span>
+            </span>
+            <span className={styles.aiBrandSuffix}>Comercial IA</span>
           </span>
         </span>
         <span className={styles.aiBadge}>

@@ -17,7 +17,7 @@ export function Banner() {
 
       <div className={styles.brandBlock}>
         <span className={styles.brandMark} aria-hidden="true">
-          <IconLogo size={22} />
+          <IconLogo width={35} height={44} />
         </span>
         <span className={styles.brandName}>
           <span className={styles.brandNameRow}>

@@ -27,7 +27,7 @@ export function Sidebar({ user, open, onClose }: SidebarProps) {
     >
       <div className={styles.brand}>
         <span className={styles.mark} aria-hidden="true">
-          <IconLogo size={20} />
+          <IconLogo width={33} height={42} />
         </span>
         <span className={styles.brandText}>
           <span className={styles.brandName}>
@@ -97,9 +97,14 @@ export function Sidebar({ user, open, onClose }: SidebarProps) {
         <div className={styles.promoCard} aria-hidden="true">
           <p className={styles.promoText}>Inteligência que gera mais negócios.</p>
           <span className={styles.promoBrand}>
-            <IconLogo size={14} />
-            <span className={styles.promoBrandName}>
-              Inovasix<span className={styles.brandSix}>6</span> Comercial IA
+            <span className={styles.promoMark} aria-hidden="true">
+              <IconLogo width={17} height={22} />
+            </span>
+            <span className={styles.promoBrandText}>
+              <span className={styles.promoBrandName}>
+                Inovasix<span className={styles.brandSix}>6</span>
+              </span>
+              <span className={styles.promoBrandSuffix}>Comercial IA</span>
             </span>
           </span>
         </div>

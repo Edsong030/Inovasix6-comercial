@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { SVGProps } from 'react';
 
 /**
@@ -262,24 +263,26 @@ export const IconArrowRight = (p: IconProps) => (
 );
 
 /**
- * Brand mark for Inovasix6 Comercial IA — an upward "N/growth" glyph evoking
- * commercial acceleration. Uses currentColor so the container controls the fill;
- * placed on the brand gradient surface it reads as the product logo.
+ * Brand mark for Inovasix6 Comercial IA — the official "i6" glyph, cropped
+ * from the approved logo artwork with a transparent background, used across
+ * the sidebar, banner and login screen.
+ *
+ * The source art is portrait (787×1002), so callers that need it to sit
+ * large next to the wordmark (matching the official logo's proportions)
+ * should pass explicit `width`/`height` in that ratio rather than `size`,
+ * which only produces a square slot.
  */
-export const IconLogo = ({ size = 20, ...props }: IconProps) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth={2.1}
-    strokeLinecap="round"
-    strokeLinejoin="round"
+export const IconLogo = ({
+  size = 20,
+  width,
+  height,
+}: IconProps & { width?: number; height?: number }) => (
+  <Image
+    src="/inovasix6-icon.png"
+    alt=""
+    width={width ?? size}
+    height={height ?? size}
     aria-hidden="true"
-    focusable="false"
-    {...props}
-  >
-    <path d="M5 18V6.5L19 18V6" />
-  </svg>
+    style={{ objectFit: 'contain' }}
+  />
 );

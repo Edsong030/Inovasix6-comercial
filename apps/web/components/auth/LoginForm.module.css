@@ -75,7 +75,7 @@
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin-bottom: 24px;
 }
 
@@ -83,20 +83,20 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: var(--brand-gradient);
-  color: #fff;
-  font-weight: 700;
-  font-size: 14px;
-  box-shadow: 0 8px 22px -8px rgba(0, 135, 255, 0.9);
+  flex-shrink: 0;
+}
+
+.brandText {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
 }
 
 .brandName {
   font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.015em;
+  white-space: nowrap;
 }
 
 .brandSix {
@@ -105,6 +105,14 @@
   background-clip: text;
   color: transparent;
   font-weight: 800;
+}
+
+.brandSuffix {
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--text-faint);
 }
 
 .title {

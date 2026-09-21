@@ -70,15 +70,39 @@ it is reachable exclusively as the DEFINER of the single read-only function
    ```
    psql -h <host> -U <admin> -d <db> -f infra/postgres/configure-auth-definer.sql
    ```
-6. Point the API at `DATABASE_URL` (the `inovasix_app` role).
-7. Run the isolation + auth tests before serving traffic:
+6. Activate the outbound-delivery tenant-discovery DEFINER (as admin):
+   ```
+   psql -h <host> -U <admin> -d <db> -f infra/postgres/configure-outbound-definer.sql
+   ```
+7. Point the API at `DATABASE_URL` (the `inovasix_app` role).
+8. Run the isolation + auth tests before serving traffic:
    ```
    npm run test:integration --workspace=@inovasix-flow/api
    ```
-8. Only then enable the application.
+9. Only then enable the application.
 
 > Order matters: the `add_auth_login_lookup` migration (step 3) creates the
 > function owned by `inovasix_owner` (NOBYPASSRLS) — so it returns 0 rows and
 > login does NOT work until step 5 transfers ownership to
 > `inovasix_auth_definer`. `configure-auth-definer.sql` fails clearly if the
 > role or function is missing. Steps 2, 4, and 5 are idempotent.
+
+## Outbound delivery: tenant discovery (`configure-outbound-definer.sql`)
+
+The delivery worker has to find messages that are due across ALL tenants, and
+under FORCE RLS a role with no tenant context sees no rows (not even the list of
+tenants). Same answer as login: a narrow `SECURITY DEFINER` function,
+`outbound_tenants_with_due_messages(p_limit, p_after)`, created by the
+`add_outbound_delivery_state` migration. It returns **tenant ids only**. The
+worker then claims, reads and finalizes each tenant's messages under normal RLS.
+
+Least privilege of `inovasix_auth_definer` for it: column-level `SELECT` on five
+columns of `messages` (`tenant_id, direction, status, next_attempt_at,
+lease_expires_at`). No `body`, `external_id`, `conversation_id`, no write access,
+no access to contacts or conversations.
+
+Like the login lookup, the migration leaves the function owned by
+`inovasix_owner` (NOBYPASSRLS), so it returns 0 rows and **nothing is delivered
+until step 6 runs** (messages simply stay PENDING). The script is idempotent and
+fails clearly if the role or function is missing. Integration tests
+(`outbound-delivery.integration-spec.ts`) require it to have been applied.

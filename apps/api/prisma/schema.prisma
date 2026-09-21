@@ -126,19 +126,20 @@ model Tenant {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  users          User[]
-  roles          Role[]
-  userRoles      UserRole[]
-  authSessions   AuthSession[]
-  contacts       Contact[]
-  pipelines      Pipeline[]
-  pipelineStages PipelineStage[]
-  leads          Lead[]
-  conversations  Conversation[]
-  messages       Message[]
-  auditLogs      AuditLog[]
-  followUps      FollowUp[]
-  calendarEvents CalendarEvent[]
+  users                    User[]
+  roles                    Role[]
+  userRoles                UserRole[]
+  authSessions             AuthSession[]
+  contacts                 Contact[]
+  contactChannelIdentities ContactChannelIdentity[]
+  pipelines                Pipeline[]
+  pipelineStages           PipelineStage[]
+  leads                    Lead[]
+  conversations            Conversation[]
+  messages                 Message[]
+  auditLogs                AuditLog[]
+  followUps                FollowUp[]
+  calendarEvents           CalendarEvent[]
 
   @@map("tenants")
 }
@@ -236,14 +237,38 @@ model Contact {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Restrict)
-  leads         Lead[]
-  conversations Conversation[]
+  tenant            Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  leads             Lead[]
+  conversations     Conversation[]
+  channelIdentities ContactChannelIdentity[]
 
   @@unique([tenantId, id])
   @@unique([tenantId, phoneE164])
   @@index([tenantId, email])
   @@map("contacts")
+}
+
+// Maps a channel-specific external identifier (WhatsApp wa_id, Webchat
+// visitorId, Instagram-scoped user id, ...) to an internal Contact. Kept as
+// its own table — rather than columns on Contact — because the same person
+// can be reachable on several channels at once, and each new channel would
+// otherwise need another nullable column on Contact that most rows never use.
+model ContactChannelIdentity {
+  id                String              @id @default(uuid()) @db.Uuid
+  tenantId          String              @map("tenant_id") @db.Uuid
+  contactId         String              @map("contact_id") @db.Uuid
+  channel           ConversationChannel
+  externalContactId String              @map("external_contact_id")
+  createdAt         DateTime            @default(now()) @map("created_at")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Restrict)
+  // Composite FK keeps the identity's contact within the same tenant.
+  contact Contact @relation(fields: [tenantId, contactId], references: [tenantId, id], onDelete: Cascade)
+
+  // One external id per channel resolves to exactly one Contact, per tenant.
+  @@unique([tenantId, channel, externalContactId])
+  @@index([tenantId, contactId])
+  @@map("contact_channel_identities")
 }
 
 model Pipeline {
@@ -381,20 +406,26 @@ model CalendarEvent {
 // ---------------------------------------------------------------------------
 
 model Conversation {
-  id             String              @id @default(uuid()) @db.Uuid
-  tenantId       String              @map("tenant_id") @db.Uuid
-  contactId      String              @map("contact_id") @db.Uuid
-  leadId         String?             @map("lead_id") @db.Uuid
-  state          ConversationState   @default(AI_ATENDENDO)
-  channel        ConversationChannel @default(MANUAL)
-  assignedUserId String?             @map("assigned_user_id") @db.Uuid
-  subject        String?
+  id                     String              @id @default(uuid()) @db.Uuid
+  tenantId               String              @map("tenant_id") @db.Uuid
+  contactId              String              @map("contact_id") @db.Uuid
+  leadId                 String?             @map("lead_id") @db.Uuid
+  state                  ConversationState   @default(AI_ATENDENDO)
+  channel                ConversationChannel @default(MANUAL)
+  assignedUserId         String?             @map("assigned_user_id") @db.Uuid
+  subject                String?
+  // Stable thread/session id from providers that hand out one (Webchat
+  // session, Instagram/Facebook thread). Null for WhatsApp (phone-threaded,
+  // no provider conversation id) and MANUAL. Lets ingestion anchor reuse
+  // precisely for channels that have their own session boundary, instead of
+  // relying only on the "latest open conversation for this contact" heuristic.
+  externalConversationId String?             @map("external_conversation_id")
   // Denormalized from the latest Message so the conversation list can sort
   // without aggregating the messages table on every request. Kept in sync by
   // the application whenever a Message is created.
-  lastMessageAt  DateTime?           @map("last_message_at")
-  createdAt      DateTime            @default(now()) @map("created_at")
-  updatedAt      DateTime            @updatedAt @map("updated_at")
+  lastMessageAt          DateTime?           @map("last_message_at")
+  createdAt              DateTime            @default(now()) @map("created_at")
+  updatedAt              DateTime            @updatedAt @map("updated_at")
 
   tenant       Tenant    @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   contact      Contact   @relation(fields: [tenantId, contactId], references: [tenantId, id], onDelete: Restrict)
@@ -409,6 +440,15 @@ model Conversation {
   messages     Message[]
 
   @@unique([tenantId, id])
+  // Uniqueness of (tenantId, channel, externalConversationId) is NOT declared
+  // here: it applies only to conversations that are not ENCERRADA, and Prisma
+  // cannot express a partial unique index. It is the hand-written index
+  // conversations_open_external_conversation_id (see migration
+  // 20260921121609_partial_external_conversation_id_unique), the same way
+  // conversations_open_per_contact_channel is. Consequently there is no
+  // generated `tenantId_channel_externalConversationId` unique input: look a
+  // thread up with findFirst({ tenantId, channel, externalConversationId,
+  // state: { not: ENCERRADA } }).
   @@index([tenantId, state, updatedAt])
   @@index([tenantId, state, lastMessageAt])
   @@index([tenantId, assignedUserId, state])
@@ -429,6 +469,29 @@ model Message {
   externalId     String?           @map("external_id")
   body           String?
   createdAt      DateTime          @default(now()) @map("created_at")
+
+  // -- Outbound delivery state (see migration add_outbound_delivery_state) ----
+  // Meaningful only for OUTBOUND messages that go to an external provider;
+  // NULL / 0 everywhere else (inbound, MANUAL, and historical rows). Column
+  // CHECK constraints (hand-written SQL, Prisma cannot express them) enforce:
+  // only PENDING OUTBOUND rows may be queued or leased, lease token and expiry
+  // come as a pair, attempts are never negative.
+  //
+  // nextAttemptAt: NULL = not in the delivery queue. Set = eligible from then.
+  //   The writer that creates a deliverable message sets it to "now"; a retry
+  //   pushes it forward (backoff); a terminal state clears it.
+  nextAttemptAt    DateTime? @map("next_attempt_at") @db.Timestamptz(3)
+  // Incremented when a delivery attempt is CLAIMED (before the provider is
+  // called), so an attempt that dies mid-flight is still counted.
+  deliveryAttempts Int       @default(0) @map("delivery_attempts")
+  lastAttemptAt    DateTime? @map("last_attempt_at") @db.Timestamptz(3)
+  // Lease: the worker that claimed the message holds it until leaseExpiresAt.
+  // Only the holder of leaseToken may finalize (compare-and-set). An expired
+  // lease makes the message claimable again (crash recovery).
+  leaseToken       String?   @map("lease_token") @db.Uuid
+  leaseExpiresAt   DateTime? @map("lease_expires_at") @db.Timestamptz(3)
+  // Short machine code (e.g. TIMEOUT, LEASE_EXPIRED). Never provider text.
+  lastErrorCode    String?   @map("last_error_code") @db.VarChar(64)
 
   tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   // Composite FK: a message cannot attach to a conversation of another tenant.

@@ -2,7 +2,7 @@ import { Body, Controller, HttpCode, HttpStatus, Logger, Post, Res, UseFilters, 
 import { ApiBasicAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import type { Response } from 'express';
-import { ConversationIngressService } from '../conversation-ingress.service';
+import { ConversationIntakeService } from '../conversation-intake.service';
 import { CurrentInboundService } from './current-inbound-service.decorator';
 import { InboundMessageDto, InboundMessageResultDto } from './dto/inbound-message.dto';
 import type { AuthenticatedInboundService } from './inbound-credentials.service';
@@ -18,8 +18,9 @@ export const INBOUND_RATE_LIMIT = { limit: 600, ttl: 60_000 };
 
 /**
  * HTTP port for channel adapters. It only adapts HTTP to
- * ConversationIngressService.ingest; all business rules (idempotency,
- * Contact/Conversation resolution, tenant isolation) live there.
+ * ConversationIntakeService.receive; all business rules (idempotency,
+ * Contact/Conversation resolution, tenant isolation, first-contact reply) live
+ * in the services behind it.
  *
  * tenantId and channel are taken from the authenticated service credential
  * (InboundServiceGuard), never from the body. Guard order matters: the rate
@@ -36,7 +37,7 @@ export const INBOUND_RATE_LIMIT = { limit: 600, ttl: 60_000 };
 export class ConversationInboundController {
   private readonly logger = new Logger(ConversationInboundController.name);
 
-  constructor(private readonly ingress: ConversationIngressService) {}
+  constructor(private readonly intake: ConversationIntakeService) {}
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
@@ -46,7 +47,9 @@ export class ConversationInboundController {
       'Autenticação: HTTP Basic com `<KEY_ID>:<SERVICE_SECRET>` (credencial de serviço configurada no servidor). ' +
       'O tenant e o canal vêm da credencial; o corpo NÃO aceita `tenantId` nem `channel` (400). ' +
       'Cria/reutiliza Contact e Conversation e grava a mensagem INBOUND. Idempotente por `externalMessageId`: ' +
-      '201 quando a mensagem é nova, 200 na reentrega (retorna a mensagem original, sem sobrescrever).',
+      '201 quando a mensagem é nova, 200 na reentrega (retorna a mensagem original, sem sobrescrever). ' +
+      'Se a mensagem abre o primeiro contato de uma conversa, também é criada UMA resposta automática de acolhimento ' +
+      '(mensagem OUTBOUND pendente de envio) e a conversa passa para AGUARDANDO_HUMANO; a resposta desta API não a inclui.',
   })
   @ApiResponse({ status: 201, description: 'Mensagem nova registrada.', type: InboundMessageResultDto })
   @ApiResponse({ status: 200, description: 'Reentrega: externalMessageId já processado (`duplicate: true`).', type: InboundMessageResultDto })
@@ -59,7 +62,7 @@ export class ConversationInboundController {
     @Body() dto: InboundMessageDto,
     @Res({ passthrough: true }) response: Response,
   ): Promise<InboundMessageResultDto> {
-    const result = await this.ingress.ingest({
+    const result = await this.intake.receive({
       tenantId: service.tenantId,
       channel: service.channel,
       externalContactId: dto.externalContactId,
@@ -86,6 +89,7 @@ export class ConversationInboundController {
       externalMessageId: dto.externalMessageId,
       duplicate: result.duplicate,
       conversationId: result.conversation.id,
+      autoReply: result.autoReply.reason,
     });
 
     return {

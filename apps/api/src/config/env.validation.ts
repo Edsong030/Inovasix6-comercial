@@ -1,4 +1,5 @@
 import * as Joi from 'joi';
+import { MAX_FIRST_CONTACT_MESSAGE_LENGTH } from './first-contact';
 import { InboundCredentialsConfigError, parseInboundCredentials } from './inbound-credentials';
 
 /**
@@ -54,6 +55,10 @@ export const envValidationSchema = Joi.object({
         return helpers.message({ custom: 'INBOUND_SERVICE_CREDENTIALS could not be validated' });
       }
     }),
+
+  // Optional override of the automatic first-contact reply text (see
+  // first-contact.ts). Blank/unset means the built-in default.
+  FIRST_CONTACT_MESSAGE: Joi.string().allow('').max(MAX_FIRST_CONTACT_MESSAGE_LENGTH),
 
   LOG_LEVEL: Joi.string()
     .valid('fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent')

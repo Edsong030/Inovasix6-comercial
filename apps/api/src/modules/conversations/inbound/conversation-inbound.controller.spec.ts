@@ -13,7 +13,7 @@ import { ThrottlerGuard } from '@nestjs/throttler';
 import { randomUUID } from 'node:crypto';
 import { createGlobalValidationPipe } from '../../../common/http/global-validation.pipe';
 import { InvalidPhoneNumberException } from '../../contacts/phone-number';
-import type { ConversationIngressResult } from '../conversation-ingress.service';
+import type { ConversationIntakeResult } from '../conversation-intake.service';
 import { ConversationInboundController, INBOUND_RATE_LIMIT } from './conversation-inbound.controller';
 import { InboundMessageDto } from './dto/inbound-message.dto';
 import type { AuthenticatedInboundService } from './inbound-credentials.service';
@@ -34,7 +34,7 @@ async function bind(body: unknown): Promise<InboundMessageDto> {
   return createGlobalValidationPipe().transform(body, { type: 'body', metatype: InboundMessageDto }) as Promise<InboundMessageDto>;
 }
 
-function result(over: Partial<ConversationIngressResult> = {}): ConversationIngressResult {
+function result(over: Partial<ConversationIntakeResult> = {}): ConversationIntakeResult {
   return {
     contact: { id: 'contact-1' },
     conversation: { id: 'conversation-1' },
@@ -44,8 +44,9 @@ function result(over: Partial<ConversationIngressResult> = {}): ConversationIngr
     conversationCreated: true,
     messageCreated: true,
     duplicate: false,
+    autoReply: { reason: 'replied', message: null },
     ...over,
-  } as unknown as ConversationIngressResult;
+  } as unknown as ConversationIntakeResult;
 }
 
 describe('InboundMessageDto validation (global ValidationPipe)', () => {
@@ -141,14 +142,14 @@ describe('InboundMessageDto validation (global ValidationPipe)', () => {
 });
 
 describe('ConversationInboundController', () => {
-  let ingest: jest.Mock;
+  let receive: jest.Mock;
   let controller: ConversationInboundController;
   let res: { status: jest.Mock };
   let logged: string[];
 
   beforeEach(() => {
-    ingest = jest.fn().mockResolvedValue(result());
-    controller = new ConversationInboundController({ ingest } as any);
+    receive = jest.fn().mockResolvedValue(result());
+    controller = new ConversationInboundController({ receive } as any);
     res = { status: jest.fn() };
     logged = [];
     jest.spyOn(Logger.prototype, 'log').mockImplementation((...args: unknown[]) => void logged.push(JSON.stringify(args)));
@@ -163,9 +164,9 @@ describe('ConversationInboundController', () => {
 
     await controller.receive(CALLER, dto, res as any);
 
-    expect(ingest).toHaveBeenCalledTimes(1);
-    expect(ingest.mock.calls[0][0].tenantId).toBe(CALLER.tenantId);
-    expect(JSON.stringify(ingest.mock.calls[0][0])).not.toContain('attacker-tenant');
+    expect(receive).toHaveBeenCalledTimes(1);
+    expect(receive.mock.calls[0][0].tenantId).toBe(CALLER.tenantId);
+    expect(JSON.stringify(receive.mock.calls[0][0])).not.toContain('attacker-tenant');
   });
 
   it('11. uses the channel of the credential, never one that came with the body', async () => {
@@ -174,7 +175,7 @@ describe('ConversationInboundController', () => {
 
     await controller.receive(CALLER, dto, res as any);
 
-    expect(ingest.mock.calls[0][0].channel).toBe('WHATSAPP');
+    expect(receive.mock.calls[0][0].channel).toBe('WHATSAPP');
   });
 
   it('delegates the event data to the ingress service and converts occurredAt to a Date', async () => {
@@ -188,7 +189,7 @@ describe('ConversationInboundController', () => {
 
     await controller.receive(CALLER, dto, res as any);
 
-    expect(ingest).toHaveBeenCalledWith({
+    expect(receive).toHaveBeenCalledWith({
       tenantId: CALLER.tenantId,
       channel: 'WHATSAPP',
       externalContactId: 'wa-1',
@@ -203,7 +204,7 @@ describe('ConversationInboundController', () => {
   it('passes occurredAt/contact as undefined when absent (the ingress owns the defaults)', async () => {
     await controller.receive(CALLER, await bind(validBody()), res as any);
 
-    expect(ingest.mock.calls[0][0]).toMatchObject({ occurredAt: undefined, contact: undefined, externalConversationId: undefined });
+    expect(receive.mock.calls[0][0]).toMatchObject({ occurredAt: undefined, contact: undefined, externalConversationId: undefined });
   });
 
   it('12. a NEW message answers 201', async () => {
@@ -213,7 +214,7 @@ describe('ConversationInboundController', () => {
   });
 
   it('13. a duplicate (redelivery) answers 200', async () => {
-    ingest.mockResolvedValue(result({ duplicate: true, messageCreated: false, conversationCreated: false, contactCreated: false, identityCreated: false }));
+    receive.mockResolvedValue(result({ duplicate: true, messageCreated: false, conversationCreated: false, contactCreated: false, identityCreated: false }));
 
     const body = await controller.receive(CALLER, await bind(validBody()), res as any);
 
@@ -227,7 +228,7 @@ describe('ConversationInboundController', () => {
       conversation: { id: 'v-1', tenantId: 't', assignedUserId: 'u' } as any,
       message: { id: 'm-1', body: 'texto do cliente', tenantId: 't' } as any,
     });
-    ingest.mockResolvedValue(full);
+    receive.mockResolvedValue(full);
 
     const body = await controller.receive(CALLER, await bind(validBody()), res as any);
 
@@ -250,14 +251,14 @@ describe('ConversationInboundController', () => {
   it('14/15/16. propagates the ingress errors unchanged (409 stays 409, phone 400 stays 400, unexpected stays unexpected)', async () => {
     const dto = await bind(validBody());
 
-    ingest.mockRejectedValueOnce(new ConflictException('Conversa externa pertence a outro contato.'));
+    receive.mockRejectedValueOnce(new ConflictException('Conversa externa pertence a outro contato.'));
     await expect(controller.receive(CALLER, dto, res as any)).rejects.toMatchObject({ status: 409 });
 
-    ingest.mockRejectedValueOnce(new InvalidPhoneNumberException());
+    receive.mockRejectedValueOnce(new InvalidPhoneNumberException());
     await expect(controller.receive(CALLER, dto, res as any)).rejects.toMatchObject({ status: 400 });
 
     const boom = new Error('connection reset');
-    ingest.mockRejectedValueOnce(boom);
+    receive.mockRejectedValueOnce(boom);
     await expect(controller.receive(CALLER, dto, res as any)).rejects.toBe(boom);
 
     expect(res.status).not.toHaveBeenCalled();
@@ -275,6 +276,18 @@ describe('ConversationInboundController', () => {
     expect(line).toContain('wamid-1');
     expect(line).toContain(CALLER.tenantId);
     for (const pii of ['CONTEUDO-PRIVADO', 'Nome Privado', '5541988887777', 'privado@example.com']) expect(line).not.toContain(pii);
+  });
+
+  it('logs the outcome of the first-contact step, and keeps the public response unchanged by it', async () => {
+    receive.mockResolvedValue(result({ autoReply: { reason: 'failed', message: null } }));
+
+    const body = await controller.receive(CALLER, await bind(validBody()), res as any);
+
+    expect(logged.join('\n')).toContain('"autoReply":"failed"');
+    expect(Object.keys(body).sort()).toEqual(
+      ['contactCreated', 'contactId', 'conversationCreated', 'conversationId', 'duplicate', 'identityCreated', 'messageCreated', 'messageId'],
+    );
+    expect(res.status).toHaveBeenCalledWith(201); // the customer's message was stored, whatever happened to the reply
   });
 
   it('protects the route with the rate limit first, then the service credential; never the user JWT guard', () => {

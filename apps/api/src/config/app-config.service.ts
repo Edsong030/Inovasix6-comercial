@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { DEFAULT_FIRST_CONTACT_MESSAGE } from './first-contact';
 
 /**
  * Typed, validated access to configuration. Modules depend on this instead of
@@ -63,6 +64,12 @@ export class AppConfigService {
    */
   get inboundServiceCredentialsRaw(): string {
     return this.config.get<string>('INBOUND_SERVICE_CREDENTIALS') ?? '[]';
+  }
+
+  /** Text of the automatic first-contact reply: FIRST_CONTACT_MESSAGE, or the built-in default when blank/unset. */
+  get firstContactMessage(): string {
+    const configured = this.config.get<string>('FIRST_CONTACT_MESSAGE')?.trim();
+    return configured || DEFAULT_FIRST_CONTACT_MESSAGE;
   }
 
   get logLevel(): string {

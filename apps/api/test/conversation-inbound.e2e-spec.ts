@@ -135,6 +135,9 @@ describe('POST /api/conversations/inbound (HTTP, real Postgres)', () => {
   });
 
   describe('success and idempotency', () => {
+    // Since the first-contact step, the FIRST message of a conversation is followed by one automatic
+    // reply (OUTBOUND/SYSTEM/PENDING) and the conversation moves to AGUARDANDO_HUMANO: hence 2 messages
+    // per new conversation below. See test/first-contact.e2e-spec.ts for that behavior itself.
     it('A) a valid event with credential A creates the data in tenant A, channel WHATSAPP -> 201', async () => {
       const res = await post(credA, event({ contact: { name: 'Ana', phone: '(41) 99999-9999', defaultCountry: 'BR' } })).expect(201);
 
@@ -148,11 +151,11 @@ describe('POST /api/conversations/inbound (HTTP, real Postgres)', () => {
         conversationCreated: true,
         messageCreated: true,
       });
-      expect(await counts(tenantA)).toEqual({ contacts: 1, conversations: 1, messages: 1 });
+      expect(await counts(tenantA)).toEqual({ contacts: 1, conversations: 1, messages: 2 });
       expect(await counts(tenantB)).toEqual(NOTHING);
 
       const conversation: any = await run(tenantA, (tx) => tx.conversation.findUnique({ where: { id: res.body.conversationId } }));
-      expect(conversation).toMatchObject({ tenantId: tenantA, channel: 'WHATSAPP', state: 'AI_ATENDENDO', leadId: null });
+      expect(conversation).toMatchObject({ tenantId: tenantA, channel: 'WHATSAPP', state: 'AGUARDANDO_HUMANO', leadId: null });
       const message: any = await run(tenantA, (tx) => tx.message.findUnique({ where: { id: res.body.messageId } }));
       expect(message).toMatchObject({ tenantId: tenantA, direction: 'INBOUND', status: 'DELIVERED', body: 'Olá, preciso de um orçamento' });
       expect(message.createdAt.toISOString()).toBe('2024-01-01T10:00:00.000Z');
@@ -186,12 +189,12 @@ describe('POST /api/conversations/inbound (HTTP, real Postgres)', () => {
         contactCreated: false,
         identityCreated: false,
       });
-      expect(await counts(tenantA)).toEqual({ contacts: 1, conversations: 1, messages: 1 });
+      expect(await counts(tenantA)).toEqual({ contacts: 1, conversations: 1, messages: 2 });
       const message: any = await run(tenantA, (tx) => tx.message.findUnique({ where: { id: first.body.messageId } }));
       expect(message.body).toBe('Olá, preciso de um orçamento'); // first event wins
     });
 
-    it('B2) 8 simultaneous deliveries of the same event -> exactly one 201, the rest 200, one message', async () => {
+    it('B2) 8 simultaneous deliveries of the same event -> exactly one 201, the rest 200, one inbound message (+ its automatic reply)', async () => {
       const body = event({ externalMessageId: 'wamid-parallel' });
 
       const responses = await Promise.all(Array.from({ length: 8 }, () => post(credA, body)));
@@ -199,7 +202,7 @@ describe('POST /api/conversations/inbound (HTTP, real Postgres)', () => {
       expect(responses.filter((r) => r.status === 201)).toHaveLength(1);
       expect(responses.filter((r) => r.status === 200)).toHaveLength(7);
       expect(new Set(responses.map((r) => r.body.messageId)).size).toBe(1);
-      expect(await counts(tenantA)).toEqual({ contacts: 1, conversations: 1, messages: 1 });
+      expect(await counts(tenantA)).toEqual({ contacts: 1, conversations: 1, messages: 2 });
     });
 
     it('C) the same externalMessageId in tenant B is independent -> 201', async () => {
@@ -211,8 +214,8 @@ describe('POST /api/conversations/inbound (HTTP, real Postgres)', () => {
       expect(b.body.duplicate).toBe(false);
       expect(b.body.messageId).not.toBe(a.body.messageId);
       expect(b.body.conversationId).not.toBe(a.body.conversationId);
-      expect(await counts(tenantA)).toEqual({ contacts: 1, conversations: 1, messages: 1 });
-      expect(await counts(tenantB)).toEqual({ contacts: 1, conversations: 1, messages: 1 });
+      expect(await counts(tenantA)).toEqual({ contacts: 1, conversations: 1, messages: 2 });
+      expect(await counts(tenantB)).toEqual({ contacts: 1, conversations: 1, messages: 2 });
     });
 
     it('the created conversation is what the existing Inbox service lists for that tenant', async () => {
@@ -222,7 +225,7 @@ describe('POST /api/conversations/inbound (HTTP, real Postgres)', () => {
       const list = await app.get(ConversationsService).list({ tenantId: tenantA, userId: randomUUID(), roleCodes: ['ADMIN'] }, {} as any);
       const other = await app.get(ConversationsService).list({ tenantId: tenantB, userId: randomUUID(), roleCodes: ['ADMIN'] }, {} as any);
 
-      expect(list.items.find((c) => c.id === res.body.conversationId)).toMatchObject({ contactName: 'Ana', channel: 'WHATSAPP', state: 'AI_ATENDENDO' });
+      expect(list.items.find((c) => c.id === res.body.conversationId)).toMatchObject({ contactName: 'Ana', channel: 'WHATSAPP', state: 'AGUARDANDO_HUMANO' });
       expect(other.items).toHaveLength(0);
     });
   });
@@ -354,7 +357,7 @@ describe('POST /api/conversations/inbound (HTTP, real Postgres)', () => {
         .expect(201);
 
       expect(await counts(tenantB)).toEqual(NOTHING); // nothing leaked into B by any attempt
-      expect(await counts(tenantA)).toEqual({ contacts: 1, conversations: 1, messages: 1 });
+      expect(await counts(tenantA)).toEqual({ contacts: 1, conversations: 1, messages: 2 });
       const stored: any = await run(tenantA, (tx) => tx.conversation.findUnique({ where: { id: viaQuery.body.conversationId } }));
       expect(stored).toMatchObject({ tenantId: tenantA, channel: 'WHATSAPP' });
 
@@ -363,7 +366,7 @@ describe('POST /api/conversations/inbound (HTTP, real Postgres)', () => {
       const storedB: any = await run(tenantB, (tx) => tx.conversation.findUnique({ where: { id: fromB.body.conversationId } }));
       expect(storedB).toMatchObject({ tenantId: tenantB, channel: 'INSTAGRAM' });
       expect(await run(tenantA, (tx) => tx.conversation.count({ where: { channel: 'INSTAGRAM' } }))).toBe(0);
-      expect(await counts(tenantA)).toEqual({ contacts: 1, conversations: 1, messages: 1 });
+      expect(await counts(tenantA)).toEqual({ contacts: 1, conversations: 1, messages: 2 });
     });
 
     it('one tenant has separate credentials per channel, each pinned to its own channel', async () => {

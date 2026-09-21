@@ -1,4 +1,5 @@
 import * as Joi from 'joi';
+import { InboundCredentialsConfigError, parseInboundCredentials } from './inbound-credentials';
 
 /**
  * Server-side environment validation. The application must fail fast at boot
@@ -36,6 +37,23 @@ export const envValidationSchema = Joi.object({
   // Auth secrets — never printed, never defaulted in production.
   JWT_ACCESS_SECRET: secret('dev_access_secret_change_me'),
   JWT_REFRESH_SECRET: secret('dev_refresh_secret_change_me'),
+
+  // Machine-to-machine credentials for POST /api/conversations/inbound (JSON
+  // array, see inbound-credentials.ts). Optional: unset/empty means the
+  // endpoint rejects everything. Validated here so a bad value fails the boot;
+  // the message never echoes the value (it holds secrets).
+  INBOUND_SERVICE_CREDENTIALS: Joi.string()
+    .allow('')
+    .default('[]')
+    .custom((value: string, helpers) => {
+      try {
+        parseInboundCredentials(value);
+        return value;
+      } catch (error) {
+        if (error instanceof InboundCredentialsConfigError) return helpers.message({ custom: error.message });
+        return helpers.message({ custom: 'INBOUND_SERVICE_CREDENTIALS could not be validated' });
+      }
+    }),
 
   LOG_LEVEL: Joi.string()
     .valid('fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent')

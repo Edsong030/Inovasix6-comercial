@@ -1,10 +1,10 @@
-import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
+import { createGlobalValidationPipe } from './common/http/global-validation.pipe';
 import { AppConfigService } from './config/app-config.service';
 
 async function bootstrap(): Promise<void> {
@@ -22,9 +22,7 @@ async function bootstrap(): Promise<void> {
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'],
   });
   app.setGlobalPrefix('api');
-  app.useGlobalPipes(
-    new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }),
-  );
+  app.useGlobalPipes(createGlobalValidationPipe());
 
   // OpenAPI / Swagger — served at /api/docs. Bearer auth so protected routes can
   // be exercised from the UI. Does not alter any runtime behaviour.
@@ -33,6 +31,11 @@ async function bootstrap(): Promise<void> {
     .setDescription('Endpoints do backend multi-tenant (auth, dashboard, leads, pipelines).')
     .setVersion('1.0')
     .addBearerAuth()
+    // Machine-to-machine credential of POST /api/conversations/inbound (keyId:secret).
+    .addBasicAuth(
+      { type: 'http', scheme: 'basic', description: 'Credencial de serviço: <KEY_ID>:<SERVICE_SECRET>' },
+      'inbound-service',
+    )
     .build();
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, document);

@@ -57,6 +57,14 @@ export class AppConfigService {
     return Number(this.config.get('JWT_REFRESH_TTL_SEC') ?? 7 * 24 * 60 * 60);
   }
 
+  /**
+   * Raw INBOUND_SERVICE_CREDENTIALS (holds secrets: never log it). Parsed and
+   * validated by parseInboundCredentials; '[]' when unset.
+   */
+  get inboundServiceCredentialsRaw(): string {
+    return this.config.get<string>('INBOUND_SERVICE_CREDENTIALS') ?? '[]';
+  }
+
   get logLevel(): string {
     return this.config.getOrThrow('LOG_LEVEL');
   }

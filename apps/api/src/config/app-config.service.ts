@@ -2,6 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { DEFAULT_FIRST_CONTACT_MESSAGE } from './first-contact';
 import { DEFAULT_OUTBOUND_DELIVERY_SETTINGS, OutboundDeliverySettings } from './outbound-delivery';
+import {
+  DEFAULT_GRAPH_API_BASE_URL,
+  DEFAULT_GRAPH_API_VERSION,
+  DEFAULT_WHATSAPP_HTTP_TIMEOUT_MS,
+  WhatsAppCloudAccount,
+  WhatsAppCloudSettings,
+  parseWhatsAppCloudAccounts,
+} from './whatsapp-cloud';
 
 /**
  * Typed, validated access to configuration. Modules depend on this instead of
@@ -88,6 +96,29 @@ export class AppConfigService {
       batchSize: number('OUTBOUND_BATCH_SIZE', d.batchSize),
       leaseMs: number('OUTBOUND_LEASE_MS', d.leaseMs),
       sendTimeoutMs: number('OUTBOUND_SEND_TIMEOUT_MS', d.sendTimeoutMs),
+    };
+  }
+
+  private whatsappAccounts: readonly WhatsAppCloudAccount[] | null = null;
+
+  /**
+   * WhatsApp Cloud API settings. `enabled` is false unless WHATSAPP_CLOUD_ENABLED
+   * is explicitly true; the secrets and accounts are only meaningful when it is
+   * (env.validation guarantees they are valid then). Never log this object: it
+   * carries the app secret and verify token (the accounts redact their tokens).
+   */
+  get whatsappCloud(): WhatsAppCloudSettings & { accounts: readonly WhatsAppCloudAccount[] } {
+    const enabled = this.config.get<unknown>('WHATSAPP_CLOUD_ENABLED');
+    const timeout = Number(this.config.get('WHATSAPP_HTTP_TIMEOUT_MS'));
+    this.whatsappAccounts ??= parseWhatsAppCloudAccounts(this.config.get<string>('WHATSAPP_CLOUD_ACCOUNTS'));
+    return {
+      enabled: enabled === true || enabled === 'true',
+      appSecret: this.config.get<string>('WHATSAPP_META_APP_SECRET') ?? '',
+      verifyToken: this.config.get<string>('WHATSAPP_WEBHOOK_VERIFY_TOKEN') ?? '',
+      graphApiVersion: this.config.get<string>('WHATSAPP_GRAPH_API_VERSION') || DEFAULT_GRAPH_API_VERSION,
+      graphApiBaseUrl: this.config.get<string>('WHATSAPP_GRAPH_API_BASE_URL') || DEFAULT_GRAPH_API_BASE_URL,
+      httpTimeoutMs: Number.isFinite(timeout) && timeout > 0 ? timeout : DEFAULT_WHATSAPP_HTTP_TIMEOUT_MS,
+      accounts: this.whatsappAccounts,
     };
   }
 

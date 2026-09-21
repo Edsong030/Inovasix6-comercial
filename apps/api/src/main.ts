@@ -6,6 +6,7 @@ import { Logger } from 'nestjs-pino';
 import { AppModule } from './app.module';
 import { createGlobalValidationPipe } from './common/http/global-validation.pipe';
 import { AppConfigService } from './config/app-config.service';
+import { configureWhatsAppWebhookBodyParser } from './modules/whatsapp/webhook/whatsapp-webhook.http';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule, { bufferLogs: true });
@@ -16,6 +17,9 @@ async function bootstrap(): Promise<void> {
   app.use(helmet());
   // Parses the HttpOnly refresh cookie used by /api/auth/refresh and logout.
   app.use(cookieParser());
+  // Raw body for the WhatsApp webhook route only (Meta's signature is over the exact bytes). Must come
+  // before init so it runs ahead of Nest's JSON parser; every other route keeps the default parser.
+  configureWhatsAppWebhookBodyParser(app, config.whatsappCloud.enabled);
   app.enableCors({
     origin: config.webOrigins,
     credentials: true,

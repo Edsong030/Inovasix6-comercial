@@ -440,10 +440,15 @@ model Conversation {
   messages     Message[]
 
   @@unique([tenantId, id])
-  // One row per provider thread/session, when the channel supplies one.
-  // Multiple NULLs are allowed (Postgres treats them as distinct), so
-  // WhatsApp/MANUAL conversations — which never set this — never collide.
-  @@unique([tenantId, channel, externalConversationId])
+  // Uniqueness of (tenantId, channel, externalConversationId) is NOT declared
+  // here: it applies only to conversations that are not ENCERRADA, and Prisma
+  // cannot express a partial unique index. It is the hand-written index
+  // conversations_open_external_conversation_id (see migration
+  // 20260921121609_partial_external_conversation_id_unique), the same way
+  // conversations_open_per_contact_channel is. Consequently there is no
+  // generated `tenantId_channel_externalConversationId` unique input: look a
+  // thread up with findFirst({ tenantId, channel, externalConversationId,
+  // state: { not: ENCERRADA } }).
   @@index([tenantId, state, updatedAt])
   @@index([tenantId, state, lastMessageAt])
   @@index([tenantId, assignedUserId, state])

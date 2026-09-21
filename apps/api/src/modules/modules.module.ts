@@ -5,6 +5,7 @@ import { CalendarModule } from './calendar/calendar.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { ConversationsModule } from './conversations/conversations.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { DeliveryModule } from './delivery/delivery.module';
 import { FilesModule } from './files/files.module';
 import { FollowupsModule } from './followups/followups.module';
 import { IntegrationsModule } from './integrations/integrations.module';
@@ -17,5 +18,5 @@ import { UsersModule } from './users/users.module';
 import { WhatsappModule } from './whatsapp/whatsapp.module';
 import { AiModule } from './ai/ai.module';
 
-@Module({ imports: [AuthModule, TenantsModule, UsersModule, ContactsModule, LeadsModule, PipelinesModule, ConversationsModule, MessagesModule, WhatsappModule, AiModule, KnowledgeModule, FollowupsModule, CalendarModule, DashboardModule, AuditModule, IntegrationsModule, FilesModule] })
+@Module({ imports: [AuthModule, TenantsModule, UsersModule, ContactsModule, LeadsModule, PipelinesModule, ConversationsModule, MessagesModule, WhatsappModule, AiModule, KnowledgeModule, FollowupsModule, CalendarModule, DashboardModule, DeliveryModule, AuditModule, IntegrationsModule, FilesModule] })
 export class ModulesModule {}

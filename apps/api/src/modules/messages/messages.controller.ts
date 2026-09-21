@@ -26,7 +26,13 @@ export class MessagesController {
   }
 
   @Post()
-  @ApiOperation({ summary: 'Envia uma mensagem manual como o agente autenticado (OUTBOUND/AGENT).' })
+  @ApiOperation({
+    summary: 'Registra uma mensagem do agente autenticado (OUTBOUND/AGENT).',
+    description:
+      'Em canal externo (WhatsApp, Instagram, Facebook, Webchat) a mensagem é criada como PENDING e entra na fila do motor de entrega; ' +
+      'vira SENT (com externalId) quando o adapter do canal a aceita, e FAILED se a entrega falhar de forma definitiva. ' +
+      'Em conversa MANUAL não há provedor externo: a mensagem nasce SENT.',
+  })
   @ApiResponse({ status: 404, description: 'Conversa inexistente ou de outro tenant.' })
   @ApiResponse({ status: 409, description: 'Conversa encerrada não aceita novas mensagens.' })
   send(

@@ -1,5 +1,5 @@
 import { ConflictException, NotFoundException } from '@nestjs/common';
-import { ConversationState, MessageDirection, MessageSenderType, MessageStatus } from '@prisma/client';
+import { ConversationChannel, ConversationState, MessageDirection, MessageSenderType, MessageStatus } from '@prisma/client';
 import type { TenantContext } from '../../common/tenant/tenant-context';
 import { MessagesService } from './messages.service';
 
@@ -68,6 +68,17 @@ describe('MessagesService', () => {
           id: 'conv-1',
           tenantId: 'tenant-a',
           state: ConversationState.AGUARDANDO_HUMANO,
+          channel: ConversationChannel.WHATSAPP,
+          lastMessageAt: null,
+        },
+      ],
+      [
+        'conv-manual',
+        {
+          id: 'conv-manual',
+          tenantId: 'tenant-a',
+          state: ConversationState.AGUARDANDO_HUMANO,
+          channel: ConversationChannel.MANUAL,
           lastMessageAt: null,
         },
       ],
@@ -80,13 +91,42 @@ describe('MessagesService', () => {
   });
 
   describe('send', () => {
-    it('creates an OUTBOUND/AGENT message attributed to the caller and marks it SENT', async () => {
+    it('creates an OUTBOUND/AGENT message attributed to the caller', async () => {
       const message = await service.send(CTX, 'conv-1', { body: 'Olá!' } as any);
       expect(message.direction).toBe(MessageDirection.OUTBOUND);
       expect(message.senderType).toBe(MessageSenderType.AGENT);
       expect(message.senderUserId).toBe('atendente-a');
-      expect(message.status).toBe(MessageStatus.SENT);
       expect(message.body).toBe('Olá!');
+    });
+
+    it('on an external channel the message is PENDING and queued for the delivery engine (not SENT: nothing has been delivered)', async () => {
+      const before = Date.now();
+      const message = await service.send(CTX, 'conv-1', { body: 'Olá!' } as any);
+
+      expect(message.status).toBe(MessageStatus.PENDING);
+      const stored = messages.get(message.id);
+      expect(stored.nextAttemptAt).toBeInstanceOf(Date);
+      expect(stored.nextAttemptAt.getTime()).toBeGreaterThanOrEqual(before);
+      expect(stored.externalId).toBeNull();
+    });
+
+    it.each([ConversationChannel.WHATSAPP, ConversationChannel.INSTAGRAM, ConversationChannel.FACEBOOK, ConversationChannel.WEBCHAT])(
+      'is queued on %s',
+      async (channel) => {
+        conversations.set('conv-1', { ...conversations.get('conv-1'), channel });
+        const message = await service.send(CTX, 'conv-1', { body: 'x' } as any);
+
+        expect(message.status).toBe(MessageStatus.PENDING);
+        expect(messages.get(message.id).nextAttemptAt).toBeInstanceOf(Date);
+      },
+    );
+
+    it('MANUAL keeps the previous behaviour: SENT at once, never queued for delivery', async () => {
+      const message = await service.send(CTX, 'conv-manual', { body: 'Nota interna' } as any);
+
+      expect(message.status).toBe(MessageStatus.SENT);
+      expect(messages.get(message.id).nextAttemptAt).toBeNull();
+      expect(conversations.get('conv-manual').lastMessageAt.toISOString()).toBe(message.createdAt);
     });
 
     it('updates Conversation.lastMessageAt to the message timestamp', async () => {

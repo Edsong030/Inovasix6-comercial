@@ -71,10 +71,13 @@ export interface FirstContactOutcome {
  * AI_ATENDENDO and the next inbound message tries again.
  *
  * The reply is a real OUTBOUND Message with status PENDING ("created, not yet
- * delivered to the provider": no channel adapter exists yet, so it must not
- * claim SENT/DELIVERED) and senderType SYSTEM with no sender user: that is what
- * tells it apart from an agent's message (AGENT + senderUserId) structurally.
- * A future adapter picks up PENDING outbound messages and moves them on.
+ * delivered to the provider": it must not claim SENT/DELIVERED) and senderType
+ * SYSTEM with no sender user: that is what tells it apart from an agent's
+ * message (AGENT + senderUserId) structurally. It is created already queued
+ * (nextAttemptAt), so the outbound delivery engine (modules/delivery) picks it
+ * up like any other outbound message and moves it to SENT when a channel
+ * adapter accepts it. That is all this service knows about delivery: it never
+ * sends, and a delivery failure can never re-open the first-contact claim.
  */
 @Injectable()
 export class FirstContactService {
@@ -115,6 +118,9 @@ export class FirstContactService {
             conversationId: conversation.id,
             direction: MessageDirection.OUTBOUND,
             status: MessageStatus.PENDING,
+            // Queued for the outbound delivery engine in the same transaction
+            // as the claim: from here the reply is due for delivery.
+            nextAttemptAt: new Date(),
             senderType: MessageSenderType.SYSTEM,
             senderUserId: null,
             body: this.messageFor(conversation.tenantId, conversation.channel),

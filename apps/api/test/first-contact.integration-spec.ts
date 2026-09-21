@@ -181,9 +181,10 @@ describe('first contact reply (integration, real Postgres)', () => {
       await new MessagesService(appPrisma as unknown as PrismaService).send(ctxA, first.conversation.id, { body: 'Oi! Aqui é a Ana.' });
 
       const outbound = await messagesOf(tenantA, { direction: 'OUTBOUND' });
+      // on an external channel the agent's message is queued for the delivery engine too (PENDING, not SENT)
       expect(outbound.map((m) => [m.senderType, m.status])).toEqual([
         ['SYSTEM', 'PENDING'],
-        ['AGENT', 'SENT'],
+        ['AGENT', 'PENDING'],
       ]);
       expect(await autoReplies(tenantA)).toHaveLength(1);
     });

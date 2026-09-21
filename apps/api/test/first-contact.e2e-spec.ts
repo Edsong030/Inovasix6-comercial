@@ -178,7 +178,8 @@ describe('first contact automatic reply and handoff (HTTP, real Postgres)', () =
 
     const sent = await asUser('post', `/api/conversations/${first.body.conversationId}/messages`).send({ body: 'Olá, sou a Ana da equipe.' }).expect(201);
 
-    expect(sent.body).toMatchObject({ direction: 'OUTBOUND', senderType: 'AGENT', senderUserId: userA, status: 'SENT', body: 'Olá, sou a Ana da equipe.' });
+    // WHATSAPP is an external channel: the human message is queued for delivery (PENDING), not SENT
+    expect(sent.body).toMatchObject({ direction: 'OUTBOUND', senderType: 'AGENT', senderUserId: userA, status: 'PENDING', body: 'Olá, sou a Ana da equipe.' });
     const history = await asUser('get', `/api/conversations/${first.body.conversationId}/messages`).expect(200);
     expect(history.body.items.filter((m: any) => m.senderType === 'SYSTEM')).toHaveLength(1);
     expect(history.body.items.filter((m: any) => m.senderType === 'AGENT')).toHaveLength(1);

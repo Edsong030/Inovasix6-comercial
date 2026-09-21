@@ -470,6 +470,29 @@ model Message {
   body           String?
   createdAt      DateTime          @default(now()) @map("created_at")
 
+  // -- Outbound delivery state (see migration add_outbound_delivery_state) ----
+  // Meaningful only for OUTBOUND messages that go to an external provider;
+  // NULL / 0 everywhere else (inbound, MANUAL, and historical rows). Column
+  // CHECK constraints (hand-written SQL, Prisma cannot express them) enforce:
+  // only PENDING OUTBOUND rows may be queued or leased, lease token and expiry
+  // come as a pair, attempts are never negative.
+  //
+  // nextAttemptAt: NULL = not in the delivery queue. Set = eligible from then.
+  //   The writer that creates a deliverable message sets it to "now"; a retry
+  //   pushes it forward (backoff); a terminal state clears it.
+  nextAttemptAt    DateTime? @map("next_attempt_at") @db.Timestamptz(3)
+  // Incremented when a delivery attempt is CLAIMED (before the provider is
+  // called), so an attempt that dies mid-flight is still counted.
+  deliveryAttempts Int       @default(0) @map("delivery_attempts")
+  lastAttemptAt    DateTime? @map("last_attempt_at") @db.Timestamptz(3)
+  // Lease: the worker that claimed the message holds it until leaseExpiresAt.
+  // Only the holder of leaseToken may finalize (compare-and-set). An expired
+  // lease makes the message claimable again (crash recovery).
+  leaseToken       String?   @map("lease_token") @db.Uuid
+  leaseExpiresAt   DateTime? @map("lease_expires_at") @db.Timestamptz(3)
+  // Short machine code (e.g. TIMEOUT, LEASE_EXPIRED). Never provider text.
+  lastErrorCode    String?   @map("last_error_code") @db.VarChar(64)
+
   tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Restrict)
   // Composite FK: a message cannot attach to a conversation of another tenant.
   conversation Conversation @relation(fields: [tenantId, conversationId], references: [tenantId, id], onDelete: Restrict)

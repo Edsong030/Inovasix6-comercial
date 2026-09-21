@@ -1,6 +1,13 @@
 import * as Joi from 'joi';
 import { MAX_FIRST_CONTACT_MESSAGE_LENGTH } from './first-contact';
 import { InboundCredentialsConfigError, parseInboundCredentials } from './inbound-credentials';
+import {
+  DEFAULT_OUTBOUND_DELIVERY_SETTINGS,
+  OUTBOUND_BATCH_SIZE_LIMITS,
+  OUTBOUND_LEASE_LIMITS,
+  OUTBOUND_POLL_INTERVAL_LIMITS,
+  OUTBOUND_SEND_TIMEOUT_LIMITS,
+} from './outbound-delivery';
 
 /**
  * Server-side environment validation. The application must fail fast at boot
@@ -60,10 +67,41 @@ export const envValidationSchema = Joi.object({
   // first-contact.ts). Blank/unset means the built-in default.
   FIRST_CONTACT_MESSAGE: Joi.string().allow('').max(MAX_FIRST_CONTACT_MESSAGE_LENGTH),
 
+  // Outbound delivery worker (see outbound-delivery.ts). Off unless enabled.
+  OUTBOUND_WORKER_ENABLED: Joi.boolean().default(DEFAULT_OUTBOUND_DELIVERY_SETTINGS.workerEnabled),
+  OUTBOUND_POLL_INTERVAL_MS: Joi.number()
+    .integer()
+    .min(OUTBOUND_POLL_INTERVAL_LIMITS.min)
+    .max(OUTBOUND_POLL_INTERVAL_LIMITS.max)
+    .default(DEFAULT_OUTBOUND_DELIVERY_SETTINGS.pollIntervalMs),
+  OUTBOUND_BATCH_SIZE: Joi.number()
+    .integer()
+    .min(OUTBOUND_BATCH_SIZE_LIMITS.min)
+    .max(OUTBOUND_BATCH_SIZE_LIMITS.max)
+    .default(DEFAULT_OUTBOUND_DELIVERY_SETTINGS.batchSize),
+  OUTBOUND_LEASE_MS: Joi.number()
+    .integer()
+    .min(OUTBOUND_LEASE_LIMITS.min)
+    .max(OUTBOUND_LEASE_LIMITS.max)
+    .default(DEFAULT_OUTBOUND_DELIVERY_SETTINGS.leaseMs),
+  OUTBOUND_SEND_TIMEOUT_MS: Joi.number()
+    .integer()
+    .min(OUTBOUND_SEND_TIMEOUT_LIMITS.min)
+    .max(OUTBOUND_SEND_TIMEOUT_LIMITS.max)
+    .default(DEFAULT_OUTBOUND_DELIVERY_SETTINGS.sendTimeoutMs),
+
   LOG_LEVEL: Joi.string()
     .valid('fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent')
     .default('info'),
 })
+  // A send that outlives its lease could be claimed by another worker while
+  // still in flight: the timeout must be strictly shorter than the lease.
+  .custom((value, helpers) => {
+    if (Number(value.OUTBOUND_SEND_TIMEOUT_MS) >= Number(value.OUTBOUND_LEASE_MS)) {
+      return helpers.message({ custom: 'OUTBOUND_SEND_TIMEOUT_MS must be lower than OUTBOUND_LEASE_MS' });
+    }
+    return value;
+  })
   // Access and refresh secrets must never be identical.
   .custom((value, helpers) => {
     if (value.JWT_ACCESS_SECRET === value.JWT_REFRESH_SECRET) {

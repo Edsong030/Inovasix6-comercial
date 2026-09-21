@@ -154,10 +154,14 @@ describe('first contact -> automatic reply -> handoff', () => {
       });
     });
 
-    it('status PENDING: created, not yet delivered to any provider (no adapter exists)', async () => {
+    it('status PENDING and queued for delivery: created, not yet delivered to any provider', async () => {
+      const before = Date.now();
       await intake.receive(input());
 
       expect(outbound()[0].status).toBe('PENDING');
+      // the outbound delivery engine picks it up from here (nextAttemptAt is what enqueues it)
+      expect(outbound()[0].nextAttemptAt).toBeInstanceOf(Date);
+      expect(outbound()[0].nextAttemptAt.getTime()).toBeGreaterThanOrEqual(before);
     });
 
     it('15. it is identified by structure (SYSTEM sender, no user), never by its text', async () => {
@@ -178,7 +182,9 @@ describe('first contact -> automatic reply -> handoff', () => {
       await messages.send({ tenantId: A, userId: 'agent-1', roleCodes: ['ATENDENTE'] }, result.conversation.id, { body: 'Olá, sou a Ana da equipe.' });
 
       const human = outbound().find((m) => m.senderType === 'AGENT')!;
-      expect(human).toMatchObject({ senderType: 'AGENT', senderUserId: 'agent-1', status: 'SENT' });
+      // on an external channel the human message is queued like the automatic one (PENDING), not SENT
+      expect(human).toMatchObject({ senderType: 'AGENT', senderUserId: 'agent-1', status: 'PENDING' });
+      expect(human.nextAttemptAt).toBeInstanceOf(Date);
       expect(isAutoReply(human)).toBe(false);
       expect(outbound().filter(isAutoReply)).toHaveLength(1);
     });

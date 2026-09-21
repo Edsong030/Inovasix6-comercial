@@ -8,6 +8,7 @@ import {
 } from '@prisma/client';
 import { PrismaService, TenantTx } from '../../prisma/prisma.service';
 import type { TenantContext } from '../../common/tenant/tenant-context';
+import { requiresExternalDelivery } from '../delivery/delivery-policy';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { ListMessagesQueryDto } from './dto/list-messages.dto';
 
@@ -71,9 +72,10 @@ export class MessagesService {
   }
 
   /**
-   * Sends a manual message as the authenticated agent (OUTBOUND/AGENT) and
-   * keeps Conversation.lastMessageAt consistent in the SAME transaction, so
-   * the two never drift apart.
+   * Records an agent's message (OUTBOUND/AGENT) and keeps
+   * Conversation.lastMessageAt consistent in the SAME transaction, so the two
+   * never drift apart. On an external channel the message is queued for
+   * delivery (PENDING); on MANUAL it is SENT at once.
    */
   async send(ctx: TenantContext, conversationId: string, dto: CreateMessageDto): Promise<MessageItem> {
     return this.prisma.runWithTenant(ctx.tenantId, async (tx) => {
@@ -83,6 +85,12 @@ export class MessagesService {
       }
 
       const now = new Date();
+      // A message on an external channel is NOT sent when it is written: it is
+      // queued (PENDING + nextAttemptAt) for the outbound delivery engine, the
+      // same one that delivers the automatic first-contact reply, and becomes
+      // SENT only when a channel adapter accepts it. A MANUAL conversation has
+      // no provider round-trip: it is SENT the instant it is written, as before.
+      const external = requiresExternalDelivery(conversation.channel);
       const message = await tx.message.create({
         data: {
           tenantId: ctx.tenantId,
@@ -90,9 +98,8 @@ export class MessagesService {
           direction: MessageDirection.OUTBOUND,
           senderType: MessageSenderType.AGENT,
           senderUserId: ctx.userId,
-          // No provider round-trip for a manual/local message — it is
-          // considered SENT the instant it is written, not PENDING.
-          status: MessageStatus.SENT,
+          status: external ? MessageStatus.PENDING : MessageStatus.SENT,
+          nextAttemptAt: external ? now : null,
           body: dto.body,
           createdAt: now,
         },
